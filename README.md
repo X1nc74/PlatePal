@@ -4,7 +4,7 @@ PlatePal is an object-oriented restaurant discovery, rating, and social recommen
 
 ## Team Members
 
-- Stefan Cheng
+- Xinpeng Cheng
 - Sunny Chen
 - Nicole Zhang
 
