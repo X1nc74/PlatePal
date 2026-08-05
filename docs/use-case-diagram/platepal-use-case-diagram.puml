@@ -1,0 +1,136 @@
+@startuml platepal-use-case
+'=============================================================================
+' PlatePal — UML Use Case Diagram
+'=============================================================================
+
+title PlatePal — Use Case Diagram
+
+left to right direction
+hide stereotype
+
+'------------------------------- styling -------------------------------------
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName DejaVu Sans
+skinparam defaultFontSize 13
+skinparam titleFontSize 19
+skinparam titleFontColor #1A202C
+skinparam nodesep 14
+skinparam ranksep 60
+skinparam ArrowColor #4A5568
+
+skinparam actor {
+  BackgroundColor #FDF0DF
+  BorderColor #B4692A
+  FontColor #1A202C
+  FontSize 14
+  FontStyle bold
+}
+
+skinparam usecase {
+  BackgroundColor #E9F1FA
+  BorderColor #2F6DB5
+  FontColor #12283F
+}
+
+' System boundary
+skinparam rectangle<<sys>> {
+  BackgroundColor #FBFCFD
+  BorderColor #2D3748
+  BorderThickness 2
+  FontSize 17
+  FontStyle bold
+  FontColor #2D3748
+}
+
+skinparam rectangle<<grp>> {
+  BackgroundColor #F2F6FB
+  BorderColor #9AAFC7
+  FontSize 12
+  FontStyle italic
+  FontColor #4A5568
+}
+
+skinparam legend {
+  BackgroundColor #FFFDF5
+  BorderColor #C9BFA4
+  FontSize 11
+  FontColor #4A5568
+}
+
+' <<include>> arrows — visually distinct from actor associations
+skinparam ArrowFontSize 11
+skinparam ArrowFontColor #6B4E9B
+
+'------------------------------- actors --------------------------------------
+actor "Regular User" as User
+actor "Administrator" as Admin
+
+'--------------------------- system boundary ---------------------------------
+rectangle "PlatePal" <<sys>> {
+
+  rectangle "Account & Access" <<grp>> {
+    usecase UC01 as "Register Account"
+    usecase UC02 as "Log In"
+  }
+
+  rectangle "Restaurant Discovery" <<grp>> {
+    usecase UC03 as "Search Restaurants"
+    usecase UC04 as "View Restaurant Details"
+  }
+
+  rectangle "My Restaurants & Opinions" <<grp>> {
+    ' declaration order places Mark Visited between its two
+    ' including use cases, keeping both <<include>> arrows short
+    usecase UC05 as "Add Restaurant to\nWant to Try"
+    usecase UC07 as "Submit Rating"
+    usecase UC06 as "Mark Restaurant as Visited"
+    usecase UC08 as "Write Review"
+    usecase UC09 as "View Personal\nRestaurant Ranking"
+  }
+
+  rectangle "Social" <<grp>> {
+    usecase UC10 as "Follow or Add Another User"
+    usecase UC11 as "View Friend Profile"
+    usecase UC12 as "View Friend Activity"
+  }
+
+  rectangle "Content Moderation" <<grp>> {
+    usecase UC16 as "Remove Review or Rating"
+  }
+
+  rectangle "Restaurant Catalog Management" <<grp>> {
+    usecase UC13 as "Add Restaurant"
+    usecase UC14 as "Update Restaurant\nInformation"
+    usecase UC15 as "Remove Restaurant"
+  }
+}
+
+'------------------- Regular User associations (12) --------------------------
+User -- UC01
+User -- UC02
+User -- UC03
+User -- UC04
+User -- UC05
+User -- UC06
+User -- UC07
+User -- UC08
+User -- UC09
+User -- UC10
+User -- UC11
+User -- UC12
+
+'------------------- Administrator associations (5) --------------------------
+UC02 -- Admin
+UC13 -- Admin
+UC14 -- Admin
+UC15 -- Admin
+UC16 -- Admin
+
+'-------------------------- include relationships ----------------------------
+UC07 .[#6B4E9B,norank].> UC06 : <<include>>
+UC08 .[#6B4E9B,norank].> UC06 : <<include>>
+
+
+
+@enduml
