@@ -58,7 +58,6 @@ skinparam legend {
   FontColor #4A5568
 }
 
-' <<include>> arrows — visually distinct from actor associations
 skinparam ArrowFontSize 11
 skinparam ArrowFontColor #6B4E9B
 
@@ -80,8 +79,6 @@ rectangle "PlatePal" <<sys>> {
   }
 
   rectangle "My Restaurants & Opinions" <<grp>> {
-    ' declaration order places Mark Visited between its two
-    ' including use cases, keeping both <<include>> arrows short
     usecase UC05 as "Add Restaurant to\nWant to Try"
     usecase UC07 as "Submit Rating"
     usecase UC06 as "Mark Restaurant as Visited"
@@ -126,11 +123,5 @@ UC13 -- Admin
 UC14 -- Admin
 UC15 -- Admin
 UC16 -- Admin
-
-'-------------------------- include relationships ----------------------------
-UC07 .[#6B4E9B,norank].> UC06 : <<include>>
-UC08 .[#6B4E9B,norank].> UC06 : <<include>>
-
-
 
 @enduml

@@ -76,7 +76,7 @@
 |---|---|
 | **UC Reference Name/Number** | UC06 — Mark Restaurant as Visited |
 | **Overview** | The system records that the user has visited a restaurant, moving it onto their Visited list. The user may perform this on its own without rating or reviewing the restaurant. |
-| **Related use cases** | Included by UC07 Submit Rating and UC08 Write Review. Remains independently available to the user. |
+| **Related use cases** | Precondition of UC07 Submit Rating and UC08 Write Review — a restaurant must be marked as visited before it can be rated or reviewed. Remains independently available to the user. |
 | **Actors** | Regular User |
 
 ### UC07 — Submit Rating
@@ -84,8 +84,9 @@
 | | |
 |---|---|
 | **UC Reference Name/Number** | UC07 — Submit Rating |
-| **Overview** | The user gives a restaurant a score and the system stores it against their account, contributing to their personal ranking. Submitting a rating always marks the restaurant as visited. |
-| **Related use cases** | `<<include>>` UC06 Mark Restaurant as Visited. |
+| **Overview** | The user gives a restaurant a score and the system stores it against their account, contributing to their personal ranking. |
+| **Preconditions** | The restaurant must already be marked as visited (UC06 Mark Restaurant as Visited). |
+| **Related use cases** | Depends on UC06 Mark Restaurant as Visited as a precondition. |
 | **Actors** | Regular User |
 
 ### UC08 — Write Review
@@ -93,8 +94,9 @@
 | | |
 |---|---|
 | **UC Reference Name/Number** | UC08 — Write Review |
-| **Overview** | The user writes a written review of a restaurant and the system stores and publishes it. Posting a review always marks the restaurant as visited. |
-| **Related use cases** | `<<include>>` UC06 Mark Restaurant as Visited. |
+| **Overview** | The user writes a written review of a restaurant and the system stores and publishes it. |
+| **Preconditions** | The restaurant must already be marked as visited (UC06 Mark Restaurant as Visited). |
+| **Related use cases** | Depends on UC06 Mark Restaurant as Visited as a precondition. |
 | **Actors** | Regular User |
 
 ### UC09 — View Personal Restaurant Ranking
