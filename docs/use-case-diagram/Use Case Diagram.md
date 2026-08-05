@@ -19,9 +19,7 @@
 | UC13 | Add Restaurant | | ● |
 | UC14 | Update Restaurant Information | | ● |
 | UC15 | Remove Restaurant | | ● |
-| UC16 | Remove Review or Rating ⚠️ | | ● |
-
-⚠️ UC16 is not in the approved proposal and requires scope approval before sign-off.
+| UC16 | Remove Review or Rating  | | ● |
 
 ---
 
@@ -162,7 +160,7 @@
 | **Related use cases** | None. |
 | **Actors** | Administrator |
 
-### UC16 — Remove Review or Rating ⚠️
+### UC16 — Remove Review or Rating
 
 | | |
 |---|---|
@@ -171,4 +169,3 @@
 | **Related use cases** | None. |
 | **Actors** | Administrator |
 
-⚠️ Pending scope approval — not in the approved proposal.
