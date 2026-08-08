@@ -23,4 +23,4 @@ PlatePal is an object-oriented restaurant discovery, rating, and social recommen
 - Java
 - Object-Oriented Programming
 - UML Analysis and Design
-- Data persistence approach: To be finalized
+- Data persistence approach: Json
