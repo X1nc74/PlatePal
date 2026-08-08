@@ -40,4 +40,14 @@ public class JsonRatingRepository implements RatingRepository {
                 .filter(rating -> rating.isFor(restaurantId))
                 .toList();
     }
+
+    @Override
+    public void deleteByRestaurantId(String restaurantId) {
+        PlatePalData data = dataStore.load();
+
+        data.getRatings()
+                .removeIf(rating -> rating.isFor(restaurantId));
+
+        dataStore.save(data);
+    }
 }

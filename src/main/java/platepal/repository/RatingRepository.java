@@ -11,4 +11,10 @@ public interface RatingRepository {
     List<Rating> findByUserId(String userId);
 
     List<Rating> findByRestaurantId(String restaurantId);
+
+    /**
+     * Removes every rating for a restaurant. Used when an administrator deletes
+     * the restaurant, so that no rating is left pointing at an ID that is gone.
+     */
+    void deleteByRestaurantId(String restaurantId);
 }

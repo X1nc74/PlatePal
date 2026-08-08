@@ -164,5 +164,10 @@ public class RestaurantControllerTest {
                     .filter(rating -> rating.isFor(restaurantId))
                     .toList();
         }
+
+        @Override
+        public void deleteByRestaurantId(String restaurantId) {
+            ratings.removeIf(rating -> rating.isFor(restaurantId));
+        }
     }
 }

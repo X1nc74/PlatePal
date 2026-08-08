@@ -53,6 +53,30 @@ public class UserService {
         return administrator;
     }
 
+    /**
+     * Creates a starting administrator account when the data file has none.
+     *
+     * <p>Administrator accounts can only be created by this method or by
+     * {@link #registerAdministrator}, and the register screen deliberately does
+     * not offer the option, so a fresh copy of the project would otherwise have
+     * no way to reach the restaurant management features at all.
+     *
+     * @return the account that was created, or empty if an administrator already
+     *         existed or the username was taken by somebody else
+     */
+    public Optional<Administrator> ensureAdministratorExists(String username,
+                                                             String password) {
+        boolean administratorExists = userRepository.findAll()
+                .stream()
+                .anyMatch(User::isAdministrator);
+
+        if (administratorExists || isUsernameTaken(username)) {
+            return Optional.empty();
+        }
+
+        return Optional.of(registerAdministrator(username, password));
+    }
+
     public Optional<User> getUserById(String id) {
         return userRepository.findById(id);
     }
@@ -77,8 +101,7 @@ public class UserService {
     }
 
     /**
-     * Produces the next ID in the {@code U001} format used by section 13 of the
-     * alignment document.
+     * Produces the next ID in the {@code U001} format 
      *
      * <p>The next number comes from the highest existing ID rather than from the
      * number of users, so an ID left behind in the middle by a deleted account
@@ -86,9 +109,7 @@ public class UserService {
      * ID, and a reused ID would silently attach one person's data to another.
      *
      * <p>Deleting the newest account is the one case this does not cover: its ID
-     * becomes the highest again and would be reissued. Closing that gap needs a
-     * stored counter, which the JSON schema in section 13 of the alignment
-     * document does not have, and nothing in the current scope deletes users.
+     * becomes the highest again and would be reissued. 
      */
     private String nextUserId() {
         int highest = 0;
