@@ -6,6 +6,7 @@ import java.util.Optional;
 import platepal.model.PriceCategory;
 import platepal.model.Restaurant;
 import platepal.repository.RestaurantRepository;
+import platepal.strategy.RestaurantSortStrategy;
 
 public class RestaurantService {
 
@@ -50,5 +51,15 @@ public class RestaurantService {
                 .filter(restaurant ->
                         restaurant.getPriceCategory() == priceCategory)
                 .toList();
+    }
+    public List<Restaurant> sortRestaurants(
+        List<Restaurant> restaurants,
+        RestaurantSortStrategy strategy) {
+
+    if (strategy == null) {
+        throw new IllegalArgumentException("Sort strategy must not be null.");
+    }
+
+    return strategy.sort(restaurants);
     }
 }
