@@ -89,6 +89,20 @@ public class RestaurantControllerTest {
         assertEquals("Joe's Pizza", ranking.get(1).getName());
     }
 
+    @Test
+    void controllerReturnsRestaurantById() {
+        Optional<Restaurant> restaurant =
+                controller.getRestaurantById("R001");
+
+        assertEquals(true, restaurant.isPresent());
+        assertEquals("Joe's Pizza", restaurant.get().getName());
+        assertEquals("Pizza", restaurant.get().getCuisine());
+        assertEquals("New York", restaurant.get().getLocation());
+        assertEquals(
+                PriceCategory.BUDGET,
+                restaurant.get().getPriceCategory());
+    }
+
     private static class FakeRestaurantRepository
             implements RestaurantRepository {
 

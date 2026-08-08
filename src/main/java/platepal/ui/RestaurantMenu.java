@@ -53,25 +53,29 @@ public class RestaurantMenu {
                     break;
 
                 case "5":
-                    sortByName();
+                    viewRestaurantDetails();
                     break;
 
                 case "6":
-                    sortByPrice();
+                    sortByName();
                     break;
 
                 case "7":
-                    sortByRating();
+                    sortByPrice();
                     break;
 
                 case "8":
-                    viewPersonalRanking();
+                    sortByRating();
                     break;
 
                 case "9":
-                    running = false;
+                    viewPersonalRanking();
                     break;
 
+                case "0":
+                    running = false;
+                    break;
+                    
                 default:
                     System.out.println("Invalid option.");
             }
@@ -85,11 +89,12 @@ public class RestaurantMenu {
         System.out.println("2. Search by cuisine");
         System.out.println("3. Search by location");
         System.out.println("4. Search by price");
-        System.out.println("5. Sort all restaurants by name");
-        System.out.println("6. Sort all restaurants by price");
-        System.out.println("7. Sort all restaurants by average rating");
-        System.out.println("8. View personal ranking");
-        System.out.println("9. Back");
+        System.out.println("5. View restaurant details");
+        System.out.println("6. Sort all restaurants by name");
+        System.out.println("7. Sort all restaurants by price");
+        System.out.println("8. Sort all restaurants by average rating");
+        System.out.println("9. View personal ranking");
+        System.out.println("0. Back");
         System.out.print("Choose an option: ");
     }
 
@@ -134,6 +139,31 @@ public class RestaurantMenu {
             System.out.println(e.getMessage());
         }
     }
+    
+    private void viewRestaurantDetails() {
+    System.out.print("Enter restaurant ID: ");
+    String id = scanner.nextLine().trim();
+
+    controller.getRestaurantById(id)
+            .ifPresentOrElse(
+                    restaurant -> {
+                        System.out.println();
+                        System.out.println("=== Restaurant Details ===");
+                        System.out.println("ID: " + restaurant.getId());
+                        System.out.println("Name: " + restaurant.getName());
+                        System.out.println("Cuisine: " + restaurant.getCuisine());
+                        System.out.println("Location: " + restaurant.getLocation());
+                        System.out.println(
+                                "Price: " + restaurant.getPriceCategory().getSymbol());
+                        System.out.println(
+                                "Description: " + restaurant.getDescription());
+                        pause();
+                    },
+                    () -> {
+                        System.out.println("Restaurant not found.");
+                        pause();
+                    });
+}
 
     private void sortByName() {
         List<Restaurant> restaurants =
