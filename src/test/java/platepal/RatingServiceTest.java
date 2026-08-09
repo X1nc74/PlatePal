@@ -30,6 +30,7 @@ import platepal.service.UserService;
  */
 public class RatingServiceTest {
 
+    private UserRepository userRepository;
     private FakeRatingRepository ratingRepository;
     private AuthService authService;
     private RatingService ratingService;
@@ -46,7 +47,7 @@ public class RatingServiceTest {
 
         ratingRepository = new FakeRatingRepository();
 
-        UserRepository userRepository = new FakeUserRepository();
+        userRepository = new FakeUserRepository();
         UserService userService = new UserService(userRepository);
         userService.register("sunny", "example");
         userService.register("alex", "example");
@@ -65,12 +66,25 @@ public class RatingServiceTest {
         authService.login("alex", "example");
     }
 
+    /**
+     * Rule 5 requires a restaurant to be visited before it can be rated, so
+     * every test that rates a restaurant marks it visited first. This helper
+     * mutates and re-saves the logged-in user directly, the same way
+     * {@code PersonalListService} would.
+     */
+    private void markVisited(String restaurantId) {
+        User user = authService.requireCurrentUser();
+        user.markAsVisited(restaurantId);
+        userRepository.save(user);
+    }
+
     // ------------------------------------------------------- rule 1: 1 to 10
 
     @Test
     @DisplayName("A score outside 1 to 10 is rejected and nothing is stored")
     void scoreOutsideRangeIsRejected() {
         loginAsSunny();
+        markVisited("R001");
 
         assertThrows(IllegalArgumentException.class,
                 () -> ratingService.rateRestaurant("R001", 0));
@@ -85,6 +99,8 @@ public class RatingServiceTest {
     @DisplayName("The lowest and highest allowed scores are accepted")
     void boundaryScoresAreAccepted() {
         loginAsSunny();
+        markVisited("R001");
+        markVisited("R002");
 
         assertEquals(1, ratingService.rateRestaurant("R001", 1).getScore());
         assertEquals(10, ratingService.rateRestaurant("R002", 10).getScore());
@@ -96,6 +112,7 @@ public class RatingServiceTest {
     @DisplayName("Rating the same restaurant again updates instead of adding a second")
     void ratingAgainUpdatesTheExistingRating() {
         loginAsSunny();
+        markVisited("R001");
 
         Rating first = ratingService.rateRestaurant("R001", 6);
         Rating second = ratingService.rateRestaurant("R001", 9);
@@ -109,6 +126,7 @@ public class RatingServiceTest {
     @DisplayName("Updating a rating refreshes its timestamp but keeps the original creation time")
     void updatingARatingRefreshesTheTimestamp() {
         loginAsSunny();
+        markVisited("R001");
 
         Rating rating = ratingService.rateRestaurant("R001", 6);
         var createdAt = rating.getCreatedAt();
@@ -123,6 +141,8 @@ public class RatingServiceTest {
     @DisplayName("One user may rate many restaurants")
     void oneUserMayRateManyRestaurants() {
         loginAsSunny();
+        markVisited("R001");
+        markVisited("R002");
 
         ratingService.rateRestaurant("R001", 7);
         ratingService.rateRestaurant("R002", 9);
@@ -136,9 +156,11 @@ public class RatingServiceTest {
     @DisplayName("Rating a restaurant never changes another user's rating of it")
     void ratingDoesNotTouchAnotherUsersRating() {
         loginAsSunny();
+        markVisited("R001");
         ratingService.rateRestaurant("R001", 4);
 
         loginAsAlex();
+        markVisited("R001");
         ratingService.rateRestaurant("R001", 10);
 
         assertEquals(2, ratingRepository.findByRestaurantId("R001").size());
@@ -152,9 +174,11 @@ public class RatingServiceTest {
     @DisplayName("Deleting a rating only removes the logged-in user's own")
     void deletingARatingOnlyRemovesYourOwn() {
         loginAsSunny();
+        markVisited("R001");
         ratingService.rateRestaurant("R001", 4);
 
         loginAsAlex();
+        markVisited("R001");
         ratingService.rateRestaurant("R001", 10);
 
         assertTrue(ratingService.removeMyRating("R001"));
@@ -192,15 +216,49 @@ public class RatingServiceTest {
                 () -> ratingService.rateRestaurant("R001", 8));
     }
 
+    // ------------------------------------------------- rule 5: must visit first
+
+    @Test
+    @DisplayName("Rating a restaurant that has not been visited is rejected")
+    void ratingAnUnvisitedRestaurantIsRejected() {
+        loginAsSunny();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> ratingService.rateRestaurant("R001", 8));
+
+        assertTrue(ratingRepository.findAll().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Visiting one restaurant does not unlock rating a different one")
+    void visitingOneRestaurantDoesNotUnlockAnother() {
+        loginAsSunny();
+        markVisited("R001");
+
+        assertThrows(IllegalArgumentException.class,
+                () -> ratingService.rateRestaurant("R002", 8));
+    }
+
+    @Test
+    @DisplayName("A restaurant can be rated once it has been visited")
+    void ratingIsAllowedOnceVisited() {
+        loginAsSunny();
+        markVisited("R001");
+
+        assertEquals(7, ratingService.rateRestaurant("R001", 7).getScore());
+    }
+
     // ------------------------------------------------------------ averages
 
     @Test
     @DisplayName("The average is the mean of every user's score")
     void averageIsTheMeanOfAllScores() {
         loginAsSunny();
+        markVisited("R001");
         ratingService.rateRestaurant("R001", 6);
 
         loginAsAlex();
+        markVisited("R001");
         ratingService.rateRestaurant("R001", 9);
 
         assertEquals(7.5, ratingService.getAverageRating("R001"), 0.001);
@@ -218,6 +276,7 @@ public class RatingServiceTest {
     @DisplayName("Updating a rating changes the average rather than adding to it")
     void updatingARatingChangesTheAverage() {
         loginAsSunny();
+        markVisited("R001");
 
         ratingService.rateRestaurant("R001", 2);
         ratingService.rateRestaurant("R001", 8);
@@ -232,6 +291,8 @@ public class RatingServiceTest {
     @DisplayName("Rating IDs follow the RT001 format and increase")
     void ratingIdsAreGeneratedInSequence() {
         loginAsSunny();
+        markVisited("R001");
+        markVisited("R002");
 
         assertEquals("RT001", ratingService.rateRestaurant("R001", 5).getId());
         assertEquals("RT002", ratingService.rateRestaurant("R002", 5).getId());
@@ -241,6 +302,8 @@ public class RatingServiceTest {
     @DisplayName("A new rating never takes an ID that is still in use")
     void newRatingIdDoesNotCollideWithAnExistingOne() {
         loginAsSunny();
+        markVisited("R001");
+        markVisited("R002");
 
         ratingService.rateRestaurant("R001", 5);   // RT001
         ratingService.rateRestaurant("R002", 5);   // RT002

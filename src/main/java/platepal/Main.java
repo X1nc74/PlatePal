@@ -75,12 +75,6 @@ public class Main {
                         restaurantRepository,
                         authService);
 
-        SocialService socialService =
-                new SocialService(
-                        userRepository,
-                        restaurantRepository,
-                        authService);
-
         RatingService ratingService =
                 new RatingService(
                         ratingRepository,
@@ -98,6 +92,14 @@ public class Main {
                 new PersonalRankingService(
                         ratingService,
                         restaurantRepository);
+
+        SocialService socialService =
+                new SocialService(
+                        userRepository,
+                        restaurantRepository,
+                        ratingRepository,
+                        personalRankingService,
+                        authService);
 
         AuthController authController =
                 new AuthController(
@@ -158,6 +160,7 @@ public class Main {
             SocialMenu socialMenu =
                     new SocialMenu(
                             socialController,
+                            restaurantController,
                             scanner);
 
             RatingMenu ratingMenu =

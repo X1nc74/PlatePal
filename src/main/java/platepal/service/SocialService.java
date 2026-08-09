@@ -1,30 +1,40 @@
 package platepal.service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import platepal.model.Rating;
 import platepal.model.Restaurant;
 import platepal.model.User;
+import platepal.repository.RatingRepository;
 import platepal.repository.RestaurantRepository;
 import platepal.repository.UserRepository;
 
 /**
- * Following other users and looking at their lists.
+ * Following other users, looking at their lists, and viewing activity from the
+ * people the current user follows.
  */
 public class SocialService {
 
     private final UserRepository userRepository;
     private final RestaurantRepository restaurantRepository;
+    private final RatingRepository ratingRepository;
+    private final PersonalRankingService personalRankingService;
     private final AuthService authService;
 
     public SocialService(UserRepository userRepository,
                          RestaurantRepository restaurantRepository,
+                         RatingRepository ratingRepository,
+                         PersonalRankingService personalRankingService,
                          AuthService authService) {
 
         this.userRepository = userRepository;
         this.restaurantRepository = restaurantRepository;
+        this.ratingRepository = ratingRepository;
+        this.personalRankingService = personalRankingService;
         this.authService = authService;
     }
 
@@ -117,6 +127,46 @@ public class SocialService {
     /** @throws IllegalArgumentException if no such user exists */
     public List<Restaurant> getWantToTryRestaurants(String username) {
         return resolveRestaurants(requireUser(username).getWantToTryRestaurantIds());
+    }
+
+    /**
+     * @return the given user's rated restaurants, highest score first
+     * @throws IllegalArgumentException if no such user exists
+     */
+    public List<Restaurant> getHighestRatedRestaurants(String username) {
+        User target = requireUser(username);
+
+        return personalRankingService.getPersonalRanking(target.getId());
+    }
+
+    /**
+     * Recent ratings left by users the current user follows, most recently
+     * changed first.
+     *
+     * <p>Supports "View recent restaurant ratings from followed users". Each
+     * {@link Rating} still stores only IDs, so the caller resolves usernames
+     * and restaurant names as needed (see {@link #getUsername(String)}).
+     *
+     * @throws IllegalStateException if nobody is logged in
+     */
+    public List<Rating> getRecentActivityFromFollowedUsers() {
+        User currentUser = authService.requireCurrentUser();
+
+        List<Rating> activity = new ArrayList<>();
+        for (String followedId : currentUser.getFollowingUserIds()) {
+            activity.addAll(ratingRepository.findByUserId(followedId));
+        }
+
+        activity.sort(Comparator.comparing(Rating::getUpdatedAt).reversed());
+
+        return activity;
+    }
+
+    /** @return the display name for a user ID, or the ID itself if the user is gone */
+    public String getUsername(String userId) {
+        return userRepository.findById(userId)
+                .map(User::getUsername)
+                .orElse(userId);
     }
 
     private User requireUser(String username) {

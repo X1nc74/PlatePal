@@ -3,6 +3,7 @@ package platepal.controller;
 import java.util.List;
 import java.util.Optional;
 
+import platepal.model.Rating;
 import platepal.model.Restaurant;
 import platepal.model.User;
 import platepal.service.SocialService;
@@ -52,5 +53,17 @@ public class SocialController {
 
     public List<Restaurant> getWantToTryRestaurants(String username) {
         return socialService.getWantToTryRestaurants(username);
+    }
+
+    public List<Restaurant> getHighestRatedRestaurants(String username) {
+        return socialService.getHighestRatedRestaurants(username);
+    }
+
+    public List<Rating> getRecentActivityFromFollowedUsers() {
+        return socialService.getRecentActivityFromFollowedUsers();
+    }
+
+    public String getUsername(String userId) {
+        return socialService.getUsername(userId);
     }
 }
