@@ -67,8 +67,7 @@ public class AuthMenu {
 
     /**
      * Registration deliberately does not start a session. The user registers,
-     * then logs in, which is the workflow in section 16 of the alignment
-     * document and keeps the two features demonstrable on their own.
+     * then logs in
      */
     private void register() {
         System.out.print("Choose a username: ");

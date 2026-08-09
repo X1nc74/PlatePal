@@ -27,3 +27,4 @@ target/
 # Temporary editor files
 ._LCK*
 *~
+data/platepal-data.json

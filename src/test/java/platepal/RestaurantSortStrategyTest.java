@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -92,8 +93,10 @@ public class RestaurantSortStrategyTest {
         fakeRatingRepository.add(
                 new Rating("RT004", "U001", "R003", 6));
 
+        // The strategy only asks for average scores, which needs neither the
+        // restaurant repository nor a logged-in user.
         RatingService ratingService =
-                new RatingService(fakeRatingRepository);
+                new RatingService(fakeRatingRepository, null, null);
 
         List<Restaurant> sorted =
                 new SortByRating(ratingService).sort(restaurants);
@@ -130,6 +133,34 @@ public class RestaurantSortStrategyTest {
             return ratings.stream()
                     .filter(rating -> rating.isFor(restaurantId))
                     .toList();
+        }
+
+        @Override
+        public Optional<Rating> findById(String id) {
+            return ratings.stream()
+                    .filter(rating -> rating.getId().equals(id))
+                    .findFirst();
+        }
+
+        @Override
+        public Optional<Rating> findByUserAndRestaurant(
+                String userId, String restaurantId) {
+
+            return ratings.stream()
+                    .filter(rating -> rating.belongsTo(userId)
+                            && rating.isFor(restaurantId))
+                    .findFirst();
+        }
+
+        @Override
+        public void save(Rating rating) {
+            ratings.removeIf(stored -> stored.getId().equals(rating.getId()));
+            ratings.add(rating);
+        }
+
+        @Override
+        public void deleteById(String id) {
+            ratings.removeIf(rating -> rating.getId().equals(id));
         }
 
         @Override

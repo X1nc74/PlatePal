@@ -4,82 +4,83 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import platepal.model.Rating;
+import platepal.model.Review;
 import platepal.persistence.JsonDataStore;
 import platepal.persistence.PlatePalData;
 
-public class JsonRatingRepository implements RatingRepository {
+public class JsonReviewRepository implements ReviewRepository {
 
     private final JsonDataStore dataStore;
 
-    public JsonRatingRepository() {
+    public JsonReviewRepository() {
         this.dataStore = new JsonDataStore();
     }
 
-    public JsonRatingRepository(JsonDataStore dataStore) {
+    /** Lets tests point the repository at a temporary file. */
+    public JsonReviewRepository(JsonDataStore dataStore) {
         this.dataStore = dataStore;
     }
 
     @Override
-    public List<Rating> findAll() {
+    public List<Review> findAll() {
         PlatePalData data = dataStore.load();
-        return new ArrayList<>(data.getRatings());
+        return new ArrayList<>(data.getReviews());
     }
 
     @Override
-    public Optional<Rating> findById(String id) {
+    public Optional<Review> findById(String id) {
         if (id == null) {
             return Optional.empty();
         }
 
         return findAll()
                 .stream()
-                .filter(rating -> rating.getId().equals(id))
+                .filter(review -> review.getId().equals(id))
                 .findFirst();
     }
 
     @Override
-    public List<Rating> findByUserId(String userId) {
+    public List<Review> findByUserId(String userId) {
         return findAll()
                 .stream()
-                .filter(rating -> rating.belongsTo(userId))
+                .filter(review -> review.belongsTo(userId))
                 .toList();
     }
 
     @Override
-    public List<Rating> findByRestaurantId(String restaurantId) {
+    public List<Review> findByRestaurantId(String restaurantId) {
         return findAll()
                 .stream()
-                .filter(rating -> rating.isFor(restaurantId))
+                .filter(review -> review.isFor(restaurantId))
                 .toList();
     }
 
     @Override
-    public Optional<Rating> findByUserAndRestaurant(String userId, String restaurantId) {
+    public Optional<Review> findByUserAndRestaurant(String userId, String restaurantId) {
         if (userId == null || restaurantId == null) {
             return Optional.empty();
         }
 
         return findAll()
                 .stream()
-                .filter(rating -> rating.belongsTo(userId) && rating.isFor(restaurantId))
+                .filter(review -> review.belongsTo(userId) && review.isFor(restaurantId))
                 .findFirst();
     }
 
     @Override
-    public void save(Rating rating) {
+    public void save(Review review) {
         PlatePalData data = dataStore.load();
 
-        List<Rating> ratings = data.getRatings();
+        List<Review> reviews = data.getReviews();
 
-        Optional<Rating> existing = ratings.stream()
-                .filter(r -> r.getId().equals(rating.getId()))
+        Optional<Review> existing = reviews.stream()
+                .filter(r -> r.getId().equals(review.getId()))
                 .findFirst();
 
         if (existing.isPresent()) {
-            ratings.set(ratings.indexOf(existing.get()), rating);
+            reviews.set(reviews.indexOf(existing.get()), review);
         } else {
-            ratings.add(rating);
+            reviews.add(review);
         }
 
         dataStore.save(data);
@@ -89,8 +90,8 @@ public class JsonRatingRepository implements RatingRepository {
     public void deleteById(String id) {
         PlatePalData data = dataStore.load();
 
-        data.getRatings()
-                .removeIf(rating -> rating.getId().equals(id));
+        data.getReviews()
+                .removeIf(review -> review.getId().equals(id));
 
         dataStore.save(data);
     }
@@ -99,8 +100,8 @@ public class JsonRatingRepository implements RatingRepository {
     public void deleteByRestaurantId(String restaurantId) {
         PlatePalData data = dataStore.load();
 
-        data.getRatings()
-                .removeIf(rating -> rating.isFor(restaurantId));
+        data.getReviews()
+                .removeIf(review -> review.isFor(restaurantId));
 
         dataStore.save(data);
     }

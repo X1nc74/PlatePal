@@ -17,9 +17,11 @@ import platepal.exception.PermissionDeniedException;
 import platepal.model.PriceCategory;
 import platepal.model.Rating;
 import platepal.model.Restaurant;
+import platepal.model.Review;
 import platepal.model.User;
 import platepal.repository.RatingRepository;
 import platepal.repository.RestaurantRepository;
+import platepal.repository.ReviewRepository;
 import platepal.repository.UserRepository;
 import platepal.service.AdminService;
 import platepal.service.AuthService;
@@ -29,6 +31,7 @@ public class AdminServiceTest {
 
     private FakeRestaurantRepository restaurantRepository;
     private FakeRatingRepository ratingRepository;
+    private FakeReviewRepository reviewRepository;
     private UserRepository userRepository;
     private AuthService authService;
     private AdminService adminService;
@@ -37,6 +40,7 @@ public class AdminServiceTest {
     void setUp() {
         restaurantRepository = new FakeRestaurantRepository();
         ratingRepository = new FakeRatingRepository();
+        reviewRepository = new FakeReviewRepository();
         userRepository = new FakeUserRepository();
 
         UserService userService = new UserService(userRepository);
@@ -48,6 +52,7 @@ public class AdminServiceTest {
         adminService = new AdminService(
                 restaurantRepository,
                 ratingRepository,
+                reviewRepository,
                 userRepository,
                 authService);
     }
@@ -223,6 +228,24 @@ public class AdminServiceTest {
     }
 
     @Test
+    @DisplayName("Removing a restaurant deletes its reviews")
+    void removingRestaurantDeletesItsReviews() {
+        loginAsAdmin();
+        adminService.addRestaurant(
+                "Joe's Pizza", "Pizza", "New York", PriceCategory.BUDGET, "");
+        adminService.addRestaurant(
+                "Pasta House", "Italian", "Boston", PriceCategory.MODERATE, "");
+
+        reviewRepository.add(new Review("RV001", "U001", "R001", "Great."));
+        reviewRepository.add(new Review("RV002", "U001", "R002", "Fine."));
+
+        adminService.removeRestaurant("R001");
+
+        assertTrue(reviewRepository.findByRestaurantId("R001").isEmpty());
+        assertEquals(1, reviewRepository.findByRestaurantId("R002").size());
+    }
+
+    @Test
     @DisplayName("Removing a restaurant clears it from every user's lists")
     void removingRestaurantClearsItFromUserLists() {
         loginAsAdmin();
@@ -289,6 +312,67 @@ public class AdminServiceTest {
         }
     }
 
+    private static class FakeReviewRepository implements ReviewRepository {
+
+        private final List<Review> reviews = new ArrayList<>();
+
+        void add(Review review) {
+            reviews.add(review);
+        }
+
+        @Override
+        public List<Review> findAll() {
+            return new ArrayList<>(reviews);
+        }
+
+        @Override
+        public Optional<Review> findById(String id) {
+            return reviews.stream()
+                    .filter(review -> review.getId().equals(id))
+                    .findFirst();
+        }
+
+        @Override
+        public List<Review> findByUserId(String userId) {
+            return reviews.stream()
+                    .filter(review -> review.belongsTo(userId))
+                    .toList();
+        }
+
+        @Override
+        public List<Review> findByRestaurantId(String restaurantId) {
+            return reviews.stream()
+                    .filter(review -> review.isFor(restaurantId))
+                    .toList();
+        }
+
+        @Override
+        public Optional<Review> findByUserAndRestaurant(
+                String userId, String restaurantId) {
+
+            return reviews.stream()
+                    .filter(review -> review.belongsTo(userId)
+                            && review.isFor(restaurantId))
+                    .findFirst();
+        }
+
+        @Override
+        public void save(Review review) {
+            reviews.removeIf(stored -> stored.getId().equals(review.getId()));
+            reviews.add(review);
+        }
+
+        @Override
+        public void deleteById(String id) {
+            reviews.removeIf(review -> review.getId().equals(id));
+        }
+
+        @Override
+        public void deleteByRestaurantId(String restaurantId) {
+            reviews.removeIf(review -> review.isFor(restaurantId));
+        }
+    }
+
     private static class FakeRatingRepository implements RatingRepository {
 
         private final List<Rating> ratings = new ArrayList<>();
@@ -314,6 +398,34 @@ public class AdminServiceTest {
             return ratings.stream()
                     .filter(rating -> rating.isFor(restaurantId))
                     .toList();
+        }
+
+        @Override
+        public Optional<Rating> findById(String id) {
+            return ratings.stream()
+                    .filter(rating -> rating.getId().equals(id))
+                    .findFirst();
+        }
+
+        @Override
+        public Optional<Rating> findByUserAndRestaurant(
+                String userId, String restaurantId) {
+
+            return ratings.stream()
+                    .filter(rating -> rating.belongsTo(userId)
+                            && rating.isFor(restaurantId))
+                    .findFirst();
+        }
+
+        @Override
+        public void save(Rating rating) {
+            ratings.removeIf(stored -> stored.getId().equals(rating.getId()));
+            ratings.add(rating);
+        }
+
+        @Override
+        public void deleteById(String id) {
+            ratings.removeIf(rating -> rating.getId().equals(id));
         }
 
         @Override

@@ -6,14 +6,18 @@ import java.util.Scanner;
 import platepal.controller.AdminController;
 import platepal.controller.AuthController;
 import platepal.controller.PersonalListController;
+import platepal.controller.RatingController;
 import platepal.controller.RestaurantController;
+import platepal.controller.ReviewController;
 import platepal.controller.SocialController;
 import platepal.model.User;
 import platepal.repository.JsonRatingRepository;
 import platepal.repository.JsonRestaurantRepository;
+import platepal.repository.JsonReviewRepository;
 import platepal.repository.JsonUserRepository;
 import platepal.repository.RatingRepository;
 import platepal.repository.RestaurantRepository;
+import platepal.repository.ReviewRepository;
 import platepal.repository.UserRepository;
 import platepal.service.AdminService;
 import platepal.service.AuthService;
@@ -21,12 +25,14 @@ import platepal.service.PersonalListService;
 import platepal.service.PersonalRankingService;
 import platepal.service.RatingService;
 import platepal.service.RestaurantService;
+import platepal.service.ReviewService;
 import platepal.service.SocialService;
 import platepal.service.UserService;
 import platepal.ui.AdminMenu;
 import platepal.ui.AuthMenu;
 import platepal.ui.MainMenu;
 import platepal.ui.PersonalListMenu;
+import platepal.ui.RatingMenu;
 import platepal.ui.RestaurantMenu;
 import platepal.ui.SocialMenu;
 
@@ -43,6 +49,9 @@ public class Main {
         RatingRepository ratingRepository =
                 new JsonRatingRepository();
 
+        ReviewRepository reviewRepository =
+                new JsonReviewRepository();
+
         UserService userService =
                 new UserService(userRepository);
 
@@ -56,6 +65,7 @@ public class Main {
                 new AdminService(
                         restaurantRepository,
                         ratingRepository,
+                        reviewRepository,
                         userRepository,
                         authService);
 
@@ -72,7 +82,17 @@ public class Main {
                         authService);
 
         RatingService ratingService =
-                new RatingService(ratingRepository);
+                new RatingService(
+                        ratingRepository,
+                        restaurantRepository,
+                        authService);
+
+        ReviewService reviewService =
+                new ReviewService(
+                        reviewRepository,
+                        restaurantRepository,
+                        userRepository,
+                        authService);
 
         PersonalRankingService personalRankingService =
                 new PersonalRankingService(
@@ -95,6 +115,12 @@ public class Main {
         SocialController socialController =
                 new SocialController(socialService);
 
+        RatingController ratingController =
+                new RatingController(ratingService);
+
+        ReviewController reviewController =
+                new ReviewController(reviewService);
+
         RestaurantController restaurantController =
                 new RestaurantController(
                         restaurantService,
@@ -116,6 +142,7 @@ public class Main {
                     new RestaurantMenu(
                             restaurantController,
                             ratingService,
+                            reviewController,
                             scanner);
 
             AdminMenu adminMenu =
@@ -133,11 +160,19 @@ public class Main {
                             socialController,
                             scanner);
 
+            RatingMenu ratingMenu =
+                    new RatingMenu(
+                            ratingController,
+                            reviewController,
+                            restaurantController,
+                            scanner);
+
             MainMenu mainMenu =
                     new MainMenu(
                             authController,
                             restaurantMenu,
                             personalListMenu,
+                            ratingMenu,
                             socialMenu,
                             adminMenu,
                             scanner);

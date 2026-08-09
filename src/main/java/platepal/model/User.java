@@ -9,8 +9,7 @@ import java.util.Set;
  * A regular PlatePal user.
  *
  * <p>Relationships to other domain objects are stored as IDs, not as object
- * references. This matches the JSON design in section 13 of the alignment
- * document and prevents circular references during Gson serialization.
+ * references. 
  *
  * <p>Business rules enforced here (structural invariants only):
  * <ul>

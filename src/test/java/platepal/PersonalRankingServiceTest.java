@@ -63,8 +63,10 @@ public class PersonalRankingServiceTest {
         ratingRepository.add(
                 new Rating("RT003", "U001", "R003", 6));
 
+        // Ranking only reads ratings by user ID, so no session is involved and
+        // the auth service is never touched.
         RatingService ratingService =
-                new RatingService(ratingRepository);
+                new RatingService(ratingRepository, restaurantRepository, null);
 
         personalRankingService =
                 new PersonalRankingService(
@@ -149,6 +151,34 @@ public class PersonalRankingServiceTest {
             return ratings.stream()
                     .filter(rating -> rating.isFor(restaurantId))
                     .toList();
+        }
+
+        @Override
+        public Optional<Rating> findById(String id) {
+            return ratings.stream()
+                    .filter(rating -> rating.getId().equals(id))
+                    .findFirst();
+        }
+
+        @Override
+        public Optional<Rating> findByUserAndRestaurant(
+                String userId, String restaurantId) {
+
+            return ratings.stream()
+                    .filter(rating -> rating.belongsTo(userId)
+                            && rating.isFor(restaurantId))
+                    .findFirst();
+        }
+
+        @Override
+        public void save(Rating rating) {
+            ratings.removeIf(stored -> stored.getId().equals(rating.getId()));
+            ratings.add(rating);
+        }
+
+        @Override
+        public void deleteById(String id) {
+            ratings.removeIf(rating -> rating.getId().equals(id));
         }
 
         @Override

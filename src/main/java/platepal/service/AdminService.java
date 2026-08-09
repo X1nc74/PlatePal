@@ -6,6 +6,7 @@ import platepal.model.Restaurant;
 import platepal.model.User;
 import platepal.repository.RatingRepository;
 import platepal.repository.RestaurantRepository;
+import platepal.repository.ReviewRepository;
 import platepal.repository.UserRepository;
 
 /**
@@ -17,16 +18,19 @@ public class AdminService {
 
     private final RestaurantRepository restaurantRepository;
     private final RatingRepository ratingRepository;
+    private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
     private final AuthService authService;
 
     public AdminService(RestaurantRepository restaurantRepository,
                         RatingRepository ratingRepository,
+                        ReviewRepository reviewRepository,
                         UserRepository userRepository,
                         AuthService authService) {
 
         this.restaurantRepository = restaurantRepository;
         this.ratingRepository = ratingRepository;
+        this.reviewRepository = reviewRepository;
         this.userRepository = userRepository;
         this.authService = authService;
     }
@@ -90,8 +94,8 @@ public class AdminService {
     /**
      * Deletes a restaurant and everything that pointed at it.
      *
-     * <p>Ratings for the restaurant are deleted, and it is removed from every
-     * user's Visited and Want to Try lists. 
+     * <p>Ratings and reviews for the restaurant are deleted, and it is removed
+     * from every user's Visited and Want to Try lists.
      *
      * @throws PermissionDeniedException if the current user is not an administrator
      * @throws IllegalArgumentException  if no such restaurant exists
@@ -104,6 +108,7 @@ public class AdminService {
 
         restaurantRepository.deleteById(id);
         ratingRepository.deleteByRestaurantId(id);
+        reviewRepository.deleteByRestaurantId(id);
 
         for (User user : userRepository.findAll()) {
             if (user.hasVisited(id) || user.wantsToTry(id)) {

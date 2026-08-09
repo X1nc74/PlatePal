@@ -10,7 +10,7 @@ import platepal.persistence.PlatePalData;
 
 /**
  * Stores users in the shared {@code data/platepal-data.json} file, under the
- * {@code "users"} key described in section 13 of the alignment document.
+ * {@code "users"} key 
  *
  * <p>Every method loads the whole file, works on it, and writes it back. That is
  * more work than a database would need, but it keeps the file consistent when

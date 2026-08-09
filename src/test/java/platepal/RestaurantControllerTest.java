@@ -56,8 +56,10 @@ public class RestaurantControllerTest {
         RestaurantService restaurantService =
                 new RestaurantService(restaurantRepository);
 
+        // Only the read paths are exercised here, so no session is involved and
+        // the auth service is never touched.
         RatingService ratingService =
-                new RatingService(ratingRepository);
+                new RatingService(ratingRepository, restaurantRepository, null);
 
         PersonalRankingService personalRankingService =
                 new PersonalRankingService(
@@ -163,6 +165,34 @@ public class RestaurantControllerTest {
             return ratings.stream()
                     .filter(rating -> rating.isFor(restaurantId))
                     .toList();
+        }
+
+        @Override
+        public Optional<Rating> findById(String id) {
+            return ratings.stream()
+                    .filter(rating -> rating.getId().equals(id))
+                    .findFirst();
+        }
+
+        @Override
+        public Optional<Rating> findByUserAndRestaurant(
+                String userId, String restaurantId) {
+
+            return ratings.stream()
+                    .filter(rating -> rating.belongsTo(userId)
+                            && rating.isFor(restaurantId))
+                    .findFirst();
+        }
+
+        @Override
+        public void save(Rating rating) {
+            ratings.removeIf(stored -> stored.getId().equals(rating.getId()));
+            ratings.add(rating);
+        }
+
+        @Override
+        public void deleteById(String id) {
+            ratings.removeIf(rating -> rating.getId().equals(id));
         }
 
         @Override

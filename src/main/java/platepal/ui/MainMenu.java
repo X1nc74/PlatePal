@@ -13,6 +13,7 @@ public class MainMenu {
     private final AuthController authController;
     private final RestaurantMenu restaurantMenu;
     private final PersonalListMenu personalListMenu;
+    private final RatingMenu ratingMenu;
     private final SocialMenu socialMenu;
     private final AdminMenu adminMenu;
     private final Scanner scanner;
@@ -20,6 +21,7 @@ public class MainMenu {
     public MainMenu(AuthController authController,
                     RestaurantMenu restaurantMenu,
                     PersonalListMenu personalListMenu,
+                    RatingMenu ratingMenu,
                     SocialMenu socialMenu,
                     AdminMenu adminMenu,
                     Scanner scanner) {
@@ -27,6 +29,7 @@ public class MainMenu {
         this.authController = authController;
         this.restaurantMenu = restaurantMenu;
         this.personalListMenu = personalListMenu;
+        this.ratingMenu = ratingMenu;
         this.socialMenu = socialMenu;
         this.adminMenu = adminMenu;
         this.scanner = scanner;
@@ -54,12 +57,16 @@ public class MainMenu {
                     break;
 
                 case "3":
-                    socialMenu.show();
+                    ratingMenu.show();
                     break;
 
                 case "4":
+                    socialMenu.show();
+                    break;
+
+                case "5":
                     // Hiding the option is not enough on its own: someone can
-                    // still type 4. AdminService checks the permission again, so
+                    // still type 5. AdminService checks the permission again, so
                     // this only decides what the screen does, not what is allowed.
                     if (currentUserIsAdministrator()) {
                         adminMenu.show();
@@ -83,10 +90,11 @@ public class MainMenu {
         System.out.println("=== PlatePal ===");
         System.out.println("1. Restaurant discovery");
         System.out.println("2. My lists");
-        System.out.println("3. Users");
+        System.out.println("3. Ratings & reviews");
+        System.out.println("4. Users");
 
         if (currentUserIsAdministrator()) {
-            System.out.println("4. Manage restaurants (administrator)");
+            System.out.println("5. Manage restaurants (administrator)");
         }
 
         System.out.println("0. Log out");

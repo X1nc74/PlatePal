@@ -4,8 +4,10 @@ import java.util.List;
 import java.util.Scanner;
 
 import platepal.controller.RestaurantController;
+import platepal.controller.ReviewController;
 import platepal.model.PriceCategory;
 import platepal.model.Restaurant;
+import platepal.model.Review;
 import platepal.service.RatingService;
 import platepal.strategy.SortByName;
 import platepal.strategy.SortByPrice;
@@ -15,15 +17,18 @@ public class RestaurantMenu {
 
     private final RestaurantController controller;
     private final RatingService ratingService;
+    private final ReviewController reviewController;
     private final Scanner scanner;
 
     public RestaurantMenu(
             RestaurantController controller,
             RatingService ratingService,
+            ReviewController reviewController,
             Scanner scanner) {
 
         this.controller = controller;
         this.ratingService = ratingService;
+        this.reviewController = reviewController;
         this.scanner = scanner;
     }
 
@@ -157,6 +162,10 @@ public class RestaurantMenu {
                                 "Price: " + restaurant.getPriceCategory().getSymbol());
                         System.out.println(
                                 "Description: " + restaurant.getDescription());
+
+                        printRatingSummary(restaurant.getId());
+                        printReviews(restaurant.getId());
+
                         pause();
                     },
                     () -> {
@@ -164,6 +173,45 @@ public class RestaurantMenu {
                         pause();
                     });
 }
+
+    /**
+     * The average score, how many ratings it is based on, and the reader's own
+     * score if they have left one. An average alone is misleading when it comes
+     * from a single rating, so the count is always shown next to it.
+     */
+    private void printRatingSummary(String restaurantId) {
+        int count = ratingService.getRatingCount(restaurantId);
+
+        if (count == 0) {
+            System.out.println("Rating: not rated yet");
+        } else {
+            System.out.printf(
+                    "Rating: %.1f/10 from %d %s%n",
+                    ratingService.getAverageRating(restaurantId),
+                    count,
+                    count == 1 ? "rating" : "ratings");
+        }
+
+        ratingService.getMyRating(restaurantId).ifPresent(
+                rating -> System.out.println("Your rating: " + rating.getScore() + "/10"));
+    }
+
+    private void printReviews(String restaurantId) {
+        List<Review> reviews = reviewController.getReviewsForRestaurant(restaurantId);
+
+        if (reviews.isEmpty()) {
+            return;
+        }
+
+        System.out.println();
+        System.out.println("Reviews:");
+
+        for (Review review : reviews) {
+            System.out.println("  " + reviewController.getAuthorName(review)
+                    + " (" + review.getUpdatedAt().toLocalDate() + "):");
+            System.out.println("    " + review.getContent());
+        }
+    }
 
     private void sortByName() {
         List<Restaurant> restaurants =
