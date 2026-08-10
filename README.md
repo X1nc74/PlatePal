@@ -2,7 +2,7 @@
 
 PlatePal is an object-oriented restaurant discovery, rating, and social recommendation system developed in Java.
 
-The application allows users to discover restaurants, keep personal restaurant lists, submit ratings and reviews, view personal rankings, and interact with other users. Administrators can also manage restaurant information.
+The application allows users to discover restaurants, maintain personal restaurant lists, submit ratings and reviews, view personal rankings, and interact with other users. Administrators can also manage restaurant information.
 
 ## Team Members
 
@@ -66,7 +66,8 @@ PlatePal uses a layered object-oriented design to separate responsibilities betw
 ```text
 PlatePal/
 ├── data/
-│   └── platepal-data.json
+│   ├── .gitkeep
+│   └── sample-platepal-data.json
 │
 ├── docs/
 │   ├── class-diagrams/
@@ -83,7 +84,8 @@ PlatePal/
 │   │           ├── repository/
 │   │           ├── service/
 │   │           ├── strategy/
-│   │           └── ui/
+│   │           ├── ui/
+│   │           └── Main.java
 │   │
 │   └── test/
 │       └── java/
@@ -114,7 +116,7 @@ Application data and behavior are grouped into appropriate classes. Domain objec
 
 ### Inheritance
 
-User roles and related application structures use inheritance where an "is-a" relationship is appropriate.
+Inheritance is used where an "is-a" relationship is appropriate, including the relationship between user roles in the system.
 
 ### Abstraction
 
@@ -128,13 +130,13 @@ Restaurant sorting behavior can be selected through a common sorting strategy in
 
 PlatePal uses the **Strategy Pattern** for restaurant sorting.
 
-Different sorting behaviors implement a common `RestaurantSortStrategy` interface. This allows the application to change how restaurants are sorted without changing the main restaurant service logic.
+Different sorting behaviors implement the common `RestaurantSortStrategy` interface. This allows the application to change how restaurants are sorted without changing the main restaurant service logic.
 
-Examples include sorting restaurants by:
+The implemented sorting strategies include:
 
-- Name
-- Price
-- Average rating
+- `SortByName`
+- `SortByPrice`
+- `SortByRating`
 
 This design keeps sorting behavior separate from restaurant management and makes additional sorting strategies easier to add.
 
@@ -162,39 +164,39 @@ This separation helps keep user interaction, business logic, and data access res
 
 ## UML Documentation
 
-UML documentation for the project is stored in the `docs` directory.
+UML class diagrams and sequence diagrams are stored in the `docs` directory.
 
-The project documentation includes:
+The UML documentation includes:
 
-- Use Case Diagram
-- Use Case Descriptions
 - Class Diagrams
 - Sequence Diagrams
 
-The diagrams describe the main system structure and interactions between users, controllers, services, repositories, and domain objects.
+The final project report also contains the complete Use Case Diagram and Use Case Descriptions.
+
+These diagrams describe the main system structure and interactions between users, controllers, services, repositories, and domain objects.
 
 ## Data Persistence
 
 PlatePal uses JSON-based file persistence through Gson.
 
-Application data is stored in:
+Sample application data is provided in:
 
 ```text
-data/platepal-data.json
+data/sample-platepal-data.json
 ```
 
-The persistent data includes information such as:
+The persistence layer manages application data such as:
 
 - Users
 - Restaurants
 - Ratings
 - Reviews
 
-The persistence layer loads the data when needed and saves application changes back to the JSON file.
+Application changes can be stored using the JSON persistence layer.
 
 ## Requirements
 
-To build the project, the following software is required:
+To build and run the project, the following software is required:
 
 - Java 17 or later
 - Maven
@@ -226,7 +228,7 @@ Run all automated tests:
 mvn clean test
 ```
 
-To compile and package the project:
+Compile and package the application:
 
 ```bash
 mvn clean package
@@ -234,23 +236,49 @@ mvn clean package
 
 ## Running the Application
 
-After cloning the repository, compile the project using Maven:
+The main application entry point is:
+
+```text
+platepal.Main
+```
+
+The application can be started through Maven with:
+
+```bash
+mvn exec:java
+```
+
+Alternatively, package the application first:
 
 ```bash
 mvn clean package
 ```
 
-Then run the application's `Main` class from your IDE or Java development environment.
+Then run the generated JAR with dependencies:
 
-The application uses the JSON file in the `data` directory for persistent storage.
+```bash
+java -jar target/platepal-1.0-SNAPSHOT-jar-with-dependencies.jar
+```
+
+The application can also be run directly from the `Main` class in an IDE.
 
 ## Testing
 
-JUnit 5 is used for automated testing.
+PlatePal uses JUnit 5 for automated testing.
 
-The test suite covers important application behavior, including restaurant discovery, ratings and reviews, personal lists, user operations, administrator functionality, and other service-level behavior.
+The test suite covers major application behavior, including:
 
-Tests can be executed with:
+- Restaurant discovery
+- Restaurant sorting
+- Ratings
+- Reviews
+- Personal restaurant lists
+- User operations
+- Social features
+- Administrator functionality
+- Service-level business rules
+
+Run the complete test suite with:
 
 ```bash
 mvn test
@@ -261,7 +289,7 @@ mvn test
 This repository contains the complete PlatePal project, including:
 
 - Java source code
-- Unit tests
+- Automated tests
 - Maven configuration
 - Sample JSON data
 - UML class diagrams
