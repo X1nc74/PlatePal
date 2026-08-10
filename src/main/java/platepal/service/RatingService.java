@@ -23,6 +23,9 @@ import platepal.repository.RestaurantRepository;
  *   <li><b>Rule 4</b> — a user may only change their own rating, which holds
  *       because every write is looked up by the logged-in user's ID. There is
  *       no path that takes someone else's rating ID.</li>
+ *   <li><b>Rule 5</b> — only restaurants in the user's Visited list may be
+ *       rated, checked against the logged-in user's own list before a rating
+ *       is created or updated.</li>
  * </ul>
  */
 public class RatingService {
@@ -47,13 +50,15 @@ public class RatingService {
      * previous score if they have already rated it.
      *
      * @return the stored rating, new or updated
-     * @throws IllegalArgumentException if no such restaurant exists, or the
-     *                                  score is outside 1..10
+     * @throws IllegalArgumentException if no such restaurant exists, the score
+     *                                  is outside 1..10, or the restaurant is
+     *                                  not in the user's Visited list
      * @throws IllegalStateException    if nobody is logged in
      */
     public Rating rateRestaurant(String restaurantId, int score) {
         String id = requireRestaurant(restaurantId);
         User user = authService.requireCurrentUser();
+        requireVisited(user, id);
 
         Optional<Rating> existing =
                 ratingRepository.findByUserAndRestaurant(user.getId(), id);
@@ -126,6 +131,20 @@ public class RatingService {
                 .mapToInt(Rating::getScore)
                 .average()
                 .orElse(0.0);
+    }
+
+    /**
+     * Business rule 5: a restaurant must be in the user's Visited list before
+     * it can be rated.
+     *
+     * @throws IllegalArgumentException if the user has not visited it
+     */
+    private void requireVisited(User user, String restaurantId) {
+        if (!user.hasVisited(restaurantId)) {
+            throw new IllegalArgumentException(
+                    "You can only rate restaurants in your Visited list. "
+                            + "Mark \"" + restaurantId + "\" as visited first.");
+        }
     }
 
     /** @return the trimmed ID, once the restaurant is known to exist */

@@ -14,21 +14,27 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import platepal.model.PriceCategory;
+import platepal.model.Rating;
 import platepal.model.Restaurant;
 import platepal.model.User;
+import platepal.repository.RatingRepository;
 import platepal.repository.RestaurantRepository;
 import platepal.repository.UserRepository;
 import platepal.service.AuthService;
 import platepal.service.PersonalListService;
+import platepal.service.PersonalRankingService;
+import platepal.service.RatingService;
 import platepal.service.SocialService;
 import platepal.service.UserService;
 
 public class SocialServiceTest {
 
     private UserRepository userRepository;
+    private FakeRatingRepository ratingRepository;
     private AuthService authService;
     private SocialService socialService;
     private PersonalListService listService;
+    private RatingService ratingService;
 
     @BeforeEach
     void setUp() {
@@ -48,11 +54,26 @@ public class SocialServiceTest {
         authService = new AuthService(userRepository);
         authService.login("sunny", "example");
 
+        ratingRepository = new FakeRatingRepository();
+
+        ratingService = new RatingService(
+                ratingRepository, restaurantRepository, authService);
+
+        PersonalRankingService personalRankingService =
+                new PersonalRankingService(ratingService, restaurantRepository);
+
         socialService = new SocialService(
-                userRepository, restaurantRepository, authService);
+                userRepository, restaurantRepository, ratingRepository,
+                personalRankingService, authService);
 
         listService = new PersonalListService(
                 userRepository, restaurantRepository, authService);
+    }
+
+    /** Visits and rates a restaurant as whoever is currently logged in. */
+    private void visitAndRate(String restaurantId, int score) {
+        listService.markAsVisited(restaurantId);
+        ratingService.rateRestaurant(restaurantId, score);
     }
 
     // ------------------------------------------------------------ following
@@ -212,6 +233,112 @@ public class SocialServiceTest {
                 () -> socialService.getFollowing());
     }
 
+    // -------------------------------------------------------- highest rated
+
+    @Test
+    @DisplayName("A user's highest-rated restaurants are ordered best score first")
+    void highestRatedRestaurantsAreOrderedByScore() {
+        authService.login("nicole", "example");
+        visitAndRate("R001", 6);
+        visitAndRate("R002", 9);
+
+        authService.login("sunny", "example");
+
+        List<Restaurant> ranking = socialService.getHighestRatedRestaurants("nicole");
+
+        assertEquals(2, ranking.size());
+        assertEquals("Sushi Nakazawa", ranking.get(0).getName());
+        assertEquals("Joe's Pizza", ranking.get(1).getName());
+    }
+
+    @Test
+    @DisplayName("Viewing highest-rated restaurants does not require following that user")
+    void highestRatedDoesNotRequireFollowing() {
+        authService.login("nicole", "example");
+        visitAndRate("R001", 8);
+
+        authService.login("sunny", "example");
+
+        assertFalse(socialService.isFollowing("nicole"));
+        assertEquals(1, socialService.getHighestRatedRestaurants("nicole").size());
+    }
+
+    @Test
+    @DisplayName("A user with no ratings has an empty highest-rated list")
+    void userWithNoRatingsHasEmptyRanking() {
+        assertTrue(socialService.getHighestRatedRestaurants("nicole").isEmpty());
+    }
+
+    @Test
+    @DisplayName("Viewing the ranking of a user who does not exist is rejected")
+    void viewingUnknownUsersRankingIsRejected() {
+        assertThrows(IllegalArgumentException.class,
+                () -> socialService.getHighestRatedRestaurants("nobody"));
+    }
+
+    // ---------------------------------------------------------- friend activity
+
+    @Test
+    @DisplayName("Friend activity shows ratings only from followed users")
+    void friendActivityShowsOnlyFollowedUsersRatings() {
+        socialService.follow("nicole");
+
+        authService.login("nicole", "example");
+        visitAndRate("R001", 7);
+
+        authService.login("xinpeng", "example");
+        visitAndRate("R002", 5);
+
+        authService.login("sunny", "example");
+
+        List<Rating> activity = socialService.getRecentActivityFromFollowedUsers();
+
+        assertEquals(1, activity.size());
+        assertEquals("R001", activity.get(0).getRestaurantId());
+    }
+
+    @Test
+    @DisplayName("Friend activity is empty when the user follows nobody")
+    void friendActivityIsEmptyWithNoFollows() {
+        assertTrue(socialService.getRecentActivityFromFollowedUsers().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Friend activity lists the most recently changed rating first")
+    void friendActivityOrdersMostRecentFirst() {
+        socialService.follow("nicole");
+
+        authService.login("nicole", "example");
+        visitAndRate("R001", 4);
+        visitAndRate("R002", 9);
+        ratingService.rateRestaurant("R001", 8); // updates R001, now most recent
+
+        authService.login("sunny", "example");
+
+        List<Rating> activity = socialService.getRecentActivityFromFollowedUsers();
+
+        assertEquals(2, activity.size());
+        assertEquals("R001", activity.get(0).getRestaurantId());
+        assertEquals(8, activity.get(0).getScore());
+    }
+
+    @Test
+    @DisplayName("Friend activity requires somebody to be logged in")
+    void friendActivityRequiresALogin() {
+        authService.logout();
+
+        assertThrows(IllegalStateException.class,
+                () -> socialService.getRecentActivityFromFollowedUsers());
+    }
+
+    @Test
+    @DisplayName("Usernames resolve back from a rating's user ID")
+    void usernameResolvesFromUserId() {
+        User nicole = userRepository.findByUsername("nicole").orElseThrow();
+
+        assertEquals("nicole", socialService.getUsername(nicole.getId()));
+    }
+
     // ------------------------------------------------------------------ fakes
 
     private static class FakeRestaurantRepository implements RestaurantRepository {
@@ -239,6 +366,63 @@ public class SocialServiceTest {
         @Override
         public void deleteById(String id) {
             restaurants.removeIf(r -> r.getId().equals(id));
+        }
+    }
+
+    private static class FakeRatingRepository implements RatingRepository {
+
+        private final List<Rating> ratings = new ArrayList<>();
+
+        @Override
+        public List<Rating> findAll() {
+            return new ArrayList<>(ratings);
+        }
+
+        @Override
+        public Optional<Rating> findById(String id) {
+            return ratings.stream()
+                    .filter(rating -> rating.getId().equals(id))
+                    .findFirst();
+        }
+
+        @Override
+        public List<Rating> findByUserId(String userId) {
+            return ratings.stream()
+                    .filter(rating -> rating.belongsTo(userId))
+                    .toList();
+        }
+
+        @Override
+        public List<Rating> findByRestaurantId(String restaurantId) {
+            return ratings.stream()
+                    .filter(rating -> rating.isFor(restaurantId))
+                    .toList();
+        }
+
+        @Override
+        public Optional<Rating> findByUserAndRestaurant(
+                String userId, String restaurantId) {
+
+            return ratings.stream()
+                    .filter(rating -> rating.belongsTo(userId)
+                            && rating.isFor(restaurantId))
+                    .findFirst();
+        }
+
+        @Override
+        public void save(Rating rating) {
+            ratings.removeIf(stored -> stored.getId().equals(rating.getId()));
+            ratings.add(rating);
+        }
+
+        @Override
+        public void deleteById(String id) {
+            ratings.removeIf(rating -> rating.getId().equals(id));
+        }
+
+        @Override
+        public void deleteByRestaurantId(String restaurantId) {
+            ratings.removeIf(rating -> rating.isFor(restaurantId));
         }
     }
 

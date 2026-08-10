@@ -3,20 +3,27 @@ package platepal.ui;
 import java.util.List;
 import java.util.Scanner;
 
+import platepal.controller.RestaurantController;
 import platepal.controller.SocialController;
+import platepal.model.Rating;
 import platepal.model.Restaurant;
 import platepal.model.User;
 
 /**
- * Following other users and viewing their lists.
+ * Following other users, viewing their lists, and seeing what the people you
+ * follow have been rating.
  */
 public class SocialMenu {
 
     private final SocialController controller;
+    private final RestaurantController restaurantController;
     private final Scanner scanner;
 
-    public SocialMenu(SocialController controller, Scanner scanner) {
+    public SocialMenu(SocialController controller,
+                      RestaurantController restaurantController,
+                      Scanner scanner) {
         this.controller = controller;
+        this.restaurantController = restaurantController;
         this.scanner = scanner;
     }
 
@@ -57,6 +64,10 @@ public class SocialMenu {
                     viewProfile();
                     break;
 
+                case "7":
+                    viewFriendActivity();
+                    break;
+
                 case "0":
                     running = false;
                     break;
@@ -76,6 +87,7 @@ public class SocialMenu {
         System.out.println("4. View who I follow");
         System.out.println("5. View my followers");
         System.out.println("6. View a user's profile and lists");
+        System.out.println("7. View friend activity (recent ratings)");
         System.out.println("0. Back");
         System.out.print("Choose an option: ");
     }
@@ -159,9 +171,46 @@ public class SocialMenu {
                             controller.getVisitedRestaurants(username));
                     printRestaurants("Want to Try",
                             controller.getWantToTryRestaurants(username));
+                    printRestaurants("Highest Rated",
+                            controller.getHighestRatedRestaurants(username));
                 },
                 () -> System.out.println(
                         "No user found with username " + username + "."));
+    }
+
+    /**
+     * Recent ratings from every user the current user follows, newest first.
+     * Each rating stores only IDs, so the restaurant name is resolved through
+     * {@link RestaurantController} the same way {@code RatingMenu} does.
+     */
+    private void viewFriendActivity() {
+        List<Rating> activity = controller.getRecentActivityFromFollowedUsers();
+
+        if (activity.isEmpty()) {
+            System.out.println("No recent activity from the people you follow.");
+            return;
+        }
+
+        System.out.println();
+        System.out.println("--- Friend Activity ---");
+
+        for (Rating rating : activity) {
+            System.out.println(
+                    controller.getUsername(rating.getUserId())
+                            + " rated " + describeRestaurant(rating.getRestaurantId())
+                            + "  " + rating.getScore() + "/10"
+                            + "  (" + rating.getUpdatedAt().toLocalDate() + ")");
+        }
+    }
+
+    /**
+     * A rating stores only a restaurant ID. A restaurant that no longer exists
+     * should still print something readable rather than a blank line.
+     */
+    private String describeRestaurant(String restaurantId) {
+        return restaurantController.getRestaurantById(restaurantId)
+                .map(Restaurant::getName)
+                .orElse(restaurantId);
     }
 
     private void printUsers(String heading, List<User> users) {
