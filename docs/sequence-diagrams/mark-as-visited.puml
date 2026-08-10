@@ -1,0 +1,64 @@
+@startuml mark-as-visited
+'
+' PlatePal - "Mark a restaurant as visited".
+'
+' Use-case level: actor, UI, controller, service, domain object, repositories.
+' Persistence below the repository is out of scope here; see the design notes
+' in docs/diagrams/README.md.
+'
+' Code: platepal.service.PersonalListService#markAsVisited
+'       (PersonalListService.java:42)
+'
+
+title PlatePal - Mark a restaurant as visited
+
+skinparam responseMessageBelowArrow true
+skinparam shadowing false
+skinparam BoxPadding 10
+hide footbox
+
+actor User as actor_user
+
+participant "menu :\nPersonalListMenu" as menu
+participant "plc :\nPersonalListController" as plc
+participant "pls :\nPersonalListService" as pls
+participant "auth :\nAuthService" as auth
+participant "user :\nUser" as user
+participant "restRepo :\nRestaurantRepository" as restRepo
+participant "userRepo :\nUserRepository" as userRepo
+
+actor_user -> menu ++ : mark as visited(restaurantId)
+menu -> plc ++ : markAsVisited(id)
+plc -> pls ++ : markAsVisited(id)
+
+pls -> restRepo ++ : findById(id)
+restRepo --> pls -- : Optional<Restaurant>
+
+alt no restaurant with that id
+    pls --> plc : <<throw>> IllegalArgumentException
+    plc --> menu : <<throw>>
+    menu -> actor_user : "No restaurant found with id ..."
+
+else restaurant exists
+    pls -> auth ++ : requireCurrentUser()
+    auth --> pls -- : user
+
+    pls -> user ++ : markAsVisited(id)
+    user --> pls -- : changed
+
+    pls -> userRepo : save(user)
+    pls -> auth : refreshCurrentUser()
+
+    pls --> plc -- : changed
+    plc --> menu -- : changed
+
+    alt changed
+        menu -> actor_user : marked Visited, dropped from Want to Try
+    else already visited
+        menu -> actor_user : "That restaurant is already in your Visited list."
+    end
+end
+
+deactivate menu
+
+@enduml

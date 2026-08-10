@@ -1,0 +1,92 @@
+@startuml add-restaurant
+
+title PlatePal - Add a restaurant
+
+skinparam responseMessageBelowArrow true
+skinparam shadowing false
+hide footbox
+
+actor Administrator
+
+participant "menu :\nAdminMenu" as menu
+participant "adc :\nAdminController" as adc
+participant "as :\nAdminService" as as
+participant "auth :\nAuthService" as auth
+participant "priceType :\nPriceCategory" as priceType
+entity "restaurant :\nRestaurant" as restaurant
+database "restRepo :\nRestaurantRepository" as restRepo
+
+Administrator -> menu ++ : submit details(name, cuisine, location,\nprice, description)
+
+menu -> priceType ++ : fromInput(price)
+
+alt invalid price
+    priceType --> menu : <<throw>> IllegalArgumentException
+    deactivate priceType
+    menu --> Administrator : show the reason
+
+else valid price
+    priceType --> menu : PriceCategory
+    deactivate priceType
+
+    menu -> adc ++ : addRestaurant(name, cuisine, location,\npriceCategory, description)
+
+    adc -> as ++ : addRestaurant(name, cuisine, location,\npriceCategory, description)
+
+    as -> auth ++ : isCurrentUserAdministrator()
+    auth --> as -- : boolean
+
+    break not an administrator
+        as --> adc : <<throw>> PermissionDeniedException
+        deactivate as
+
+        adc --> menu : <<throw>>
+        deactivate adc
+
+        menu --> Administrator : "Only administrators may manage restaurants."
+    end
+
+    as -> restRepo ++ : findAll()
+    restRepo --> as -- : List<Restaurant>
+
+    as -> as : nextRestaurantId()
+
+    create restaurant
+    as -> restaurant ++ : new Restaurant(id, name, cuisine,\nlocation, priceCategory)
+    
+    alt a detail is empty or invalid
+        restaurant --> as : <<throw>> IllegalArgumentException
+        deactivate restaurant
+        destroy restaurant
+
+        as --> adc : <<throw>>
+        deactivate as
+
+        adc --> menu : <<throw>>
+        deactivate adc
+
+        menu --> Administrator : show the reason
+
+    else details accepted
+        restaurant --> as : created
+        deactivate restaurant
+
+        as -> restaurant ++ : setDescription(description)
+        restaurant --> as -- : updated
+
+        as -> restRepo ++ : save(restaurant)
+        restRepo --> as --
+        
+        as --> adc : Restaurant
+        deactivate as
+
+        adc --> menu : Restaurant
+        deactivate adc
+
+        menu --> Administrator : added, with its new ID
+    end
+end
+
+deactivate menu
+
+@enduml

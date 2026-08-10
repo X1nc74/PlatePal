@@ -1,0 +1,74 @@
+@startuml register-account
+
+title PlatePal - Register an account
+
+skinparam responseMessageBelowArrow true
+skinparam shadowing false
+hide footbox
+
+actor Visitor
+
+participant "menu :\nAuthMenu" as menu
+participant "ac :\nAuthController" as ac
+participant "us :\nUserService" as us
+database "userRepo :\nUserRepository" as userRepo
+entity "user :\nUser" as user
+
+Visitor -> menu ++ : submit registration(username, password)
+
+menu -> ac ++ : register(username, password)
+ac -> us ++ : register(username, password)
+
+alt invalid username or password
+
+    us --> ac : <<throw>> IllegalArgumentException
+    deactivate us
+
+    ac --> menu : <<throw>>
+    deactivate ac
+
+    menu --> Visitor : show the reason
+
+else fields accepted
+
+    us -> userRepo ++ : findByUsername(username)
+    userRepo --> us -- : Optional<User>
+
+    alt username already taken
+
+        us --> ac : <<throw>> IllegalArgumentException
+        deactivate us
+
+        ac --> menu : <<throw>>
+        deactivate ac
+
+        menu --> Visitor : "Username '...' is already taken."
+
+    else username available
+
+        us -> userRepo ++ : findAll()
+        userRepo --> us -- : List<User>
+
+        us -> us : nextUserId()
+
+        create user
+        us -> user ++ : new User(id, username, password)
+        user --> us -- : created
+
+        us -> userRepo ++ : save(user)
+        userRepo --> us --
+        
+        us --> ac : User
+        deactivate us
+
+        ac --> menu : User
+        deactivate ac
+
+        menu --> Visitor : account created
+
+    end
+end
+
+deactivate menu
+
+@enduml

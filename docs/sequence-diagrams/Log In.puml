@@ -1,0 +1,59 @@
+@startuml log-in
+
+title PlatePal - Log in
+
+skinparam responseMessageBelowArrow true
+skinparam shadowing false
+hide footbox
+
+actor Visitor
+
+participant "menu :\nAuthMenu" as menu
+participant "ac :\nAuthController" as ac
+participant "auth :\nAuthService" as auth
+participant "user :\nUser" as user
+participant "userRepo :\nUserRepository" as userRepo
+
+Visitor -> menu ++ : submit credentials(username, password)
+
+menu -> ac ++ : login(username, password)
+ac -> auth ++ : login(username, password)
+
+auth -> userRepo ++ : findByUsername(username)
+userRepo --> auth -- : Optional<User>
+
+opt user with that username exists
+    auth -> user ++ : matchesPassword(password)
+    user --> auth -- : boolean
+end
+
+alt unknown username or wrong password
+
+    auth --> ac : Optional.empty()
+    deactivate auth
+
+    ac --> menu : Optional.empty()
+    deactivate ac
+
+    menu -> Visitor : "Invalid username or password."
+
+else credentials match
+
+    note right of auth
+        matching user becomes
+        the current user
+    end note
+
+    auth --> ac : Optional<User>
+    deactivate auth
+
+    ac --> menu : Optional<User>
+    deactivate ac
+
+    menu -> Visitor : "Welcome back, <name>!"
+
+end
+
+deactivate menu
+
+@enduml

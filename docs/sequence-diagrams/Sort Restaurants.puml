@@ -1,0 +1,163 @@
+@startuml
+title PlatePal - Sort Restaurants
+
+hide footbox
+skinparam shadowing false
+
+actor User
+boundary "menu :\nRestaurantMenu" as menu
+control "rc :\nRestaurantController" as rc
+control "rs :\nRestaurantService" as rs
+control "ratingSvc :\nRatingService" as ratingSvc
+
+entity "byName :\nSortByName" as byName
+entity "byPrice :\nSortByPrice" as byPrice
+entity "byRating :\nSortByRating" as byRating
+
+database "restRepo :\nRestaurantRepository" as restRepo
+database "ratingRepo :\nRatingRepository" as ratingRepo
+
+User -> menu : choose sort option
+activate menu
+
+alt sort by name
+
+    menu -> rc : getAllRestaurants()
+    activate rc
+
+    rc -> rs : getAllRestaurants()
+    activate rs
+
+    rs -> restRepo : findAll()
+    activate restRepo
+    restRepo --> rs : List<Restaurant>
+    deactivate restRepo
+
+    rs --> rc : List<Restaurant>
+    deactivate rs
+
+    rc --> menu : List<Restaurant>
+    deactivate rc
+
+    create byName
+    menu -> byName : new SortByName()
+
+    menu -> rc : sortRestaurants(restaurants, byName)
+    activate rc
+
+    rc -> rs : sortRestaurants(restaurants, byName)
+    activate rs
+
+    rs -> byName : sort(restaurants)
+    activate byName
+
+    byName --> rs : sorted List<Restaurant>
+    deactivate byName
+
+    rs --> rc : sorted List<Restaurant>
+    deactivate rs
+
+    rc --> menu : sorted List<Restaurant>
+    deactivate rc
+
+else sort by price
+
+    menu -> rc : getAllRestaurants()
+    activate rc
+
+    rc -> rs : getAllRestaurants()
+    activate rs
+
+    rs -> restRepo : findAll()
+    activate restRepo
+    restRepo --> rs : List<Restaurant>
+    deactivate restRepo
+
+    rs --> rc : List<Restaurant>
+    deactivate rs
+
+    rc --> menu : List<Restaurant>
+    deactivate rc
+
+    create byPrice
+    menu -> byPrice : new SortByPrice()
+
+    menu -> rc : sortRestaurants(restaurants, byPrice)
+    activate rc
+
+    rc -> rs : sortRestaurants(restaurants, byPrice)
+    activate rs
+
+    rs -> byPrice : sort(restaurants)
+    activate byPrice
+
+    byPrice --> rs : sorted List<Restaurant>
+    deactivate byPrice
+
+    rs --> rc : sorted List<Restaurant>
+    deactivate rs
+
+    rc --> menu : sorted List<Restaurant>
+    deactivate rc
+
+else sort by average rating
+
+    menu -> rc : sortByAverageRating()
+    activate rc
+
+    rc -> rs : getAllRestaurants()
+    activate rs
+
+    rs -> restRepo : findAll()
+    activate restRepo
+    restRepo --> rs : List<Restaurant>
+    deactivate restRepo
+
+    rs --> rc : List<Restaurant>
+    deactivate rs
+
+    create byRating
+    rc -> byRating : new SortByRating(ratingService)
+
+    rc -> rs : sortRestaurants(restaurants, byRating)
+    activate rs
+
+    rs -> byRating : sort(restaurants)
+    activate byRating
+
+    loop comparator evaluates restaurants
+
+        byRating -> ratingSvc : getAverageRating(restaurantId)
+        activate ratingSvc
+
+        ratingSvc -> ratingRepo : findByRestaurantId(restaurantId)
+        activate ratingRepo
+
+        ratingRepo --> ratingSvc : List<Rating>
+        deactivate ratingRepo
+
+        ratingSvc --> byRating : average rating
+        deactivate ratingSvc
+
+    end
+
+    byRating --> rs : sorted List<Restaurant>
+    deactivate byRating
+
+    rs --> rc : sorted List<Restaurant>
+    deactivate rs
+
+    rc --> menu : sorted List<Restaurant>
+    deactivate rc
+
+end
+
+alt no restaurants
+    menu --> User : "No restaurants found."
+else restaurants available
+    menu --> User : display sorted restaurants
+end
+
+deactivate menu
+
+@enduml

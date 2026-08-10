@@ -1,0 +1,167 @@
+@startuml
+title PlatePal - View Restaurant Details
+
+hide footbox
+skinparam shadowing false
+
+actor User
+boundary "menu :\nRestaurantMenu" as menu
+
+control "rc :\nRestaurantController" as rc
+control "rvc :\nReviewController" as rvc
+
+control "rs :\nRestaurantService" as rs
+control "ratingSvc :\nRatingService" as ratingSvc
+control "reviewSvc :\nReviewService" as reviewSvc
+control "auth :\nAuthService" as auth
+
+database "restRepo :\nRestaurantRepository" as restRepo
+database "ratingRepo :\nRatingRepository" as ratingRepo
+database "reviewRepo :\nReviewRepository" as reviewRepo
+database "userRepo :\nUserRepository" as userRepo
+
+actor User
+
+User -> menu : enter restaurant ID
+activate menu
+
+menu -> rc : getRestaurantById(id)
+activate rc
+
+rc -> rs : getRestaurantById(id)
+activate rs
+
+rs -> restRepo : findById(id)
+activate restRepo
+restRepo --> rs : Optional<Restaurant>
+deactivate restRepo
+
+rs --> rc : Optional<Restaurant>
+deactivate rs
+
+rc --> menu : Optional<Restaurant>
+deactivate rc
+
+alt restaurant not found
+
+    menu --> User : "Restaurant not found."
+
+else restaurant found
+
+    menu --> User : display restaurant information
+
+    menu -> rc : getRatingCount(id)
+    activate rc
+
+    rc -> ratingSvc : getRatingCount(id)
+    activate ratingSvc
+
+    ratingSvc -> ratingRepo : findByRestaurantId(id)
+    activate ratingRepo
+    ratingRepo --> ratingSvc : List<Rating>
+    deactivate ratingRepo
+
+    ratingSvc --> rc : count
+    deactivate ratingSvc
+
+    rc --> menu : count
+    deactivate rc
+
+    alt no ratings
+        menu --> User : "Rating: not rated yet."
+
+    else ratings exist
+
+        menu -> rc : getAverageRating(id)
+        activate rc
+
+        rc -> ratingSvc : getAverageRating(id)
+        activate ratingSvc
+
+        ratingSvc -> ratingRepo : findByRestaurantId(id)
+        activate ratingRepo
+        ratingRepo --> ratingSvc : List<Rating>
+        deactivate ratingRepo
+
+        ratingSvc --> rc : average
+        deactivate ratingSvc
+
+        rc --> menu : average
+        deactivate rc
+
+        menu --> User : display average and rating count
+    end
+
+    menu -> rc : getMyRating(id)
+    activate rc
+
+    rc -> ratingSvc : getMyRating(id)
+    activate ratingSvc
+
+    ratingSvc -> auth : requireCurrentUser()
+    activate auth
+    auth --> ratingSvc : User
+    deactivate auth
+
+    ratingSvc -> ratingRepo : findByUserAndRestaurant(userId, id)
+    activate ratingRepo
+    ratingRepo --> ratingSvc : Optional<Rating>
+    deactivate ratingRepo
+
+    ratingSvc --> rc : Optional<Rating>
+    deactivate ratingSvc
+
+    rc --> menu : Optional<Rating>
+    deactivate rc
+
+    opt current user has a rating
+        menu --> User : display "Your rating"
+    end
+
+    menu -> rvc : getReviewsForRestaurant(id)
+    activate rvc
+
+    rvc -> reviewSvc : getReviewsForRestaurant(id)
+    activate reviewSvc
+
+    reviewSvc -> reviewRepo : findByRestaurantId(id)
+    activate reviewRepo
+    reviewRepo --> reviewSvc : List<Review>
+    deactivate reviewRepo
+
+    reviewSvc --> rvc : List<Review>
+    deactivate reviewSvc
+
+    rvc --> menu : List<Review>
+    deactivate rvc
+
+    opt reviews exist
+
+        loop each review
+
+            menu -> rvc : getAuthorName(review)
+            activate rvc
+
+            rvc -> reviewSvc : getAuthorName(review)
+            activate reviewSvc
+
+            reviewSvc -> userRepo : findById(review.userId)
+            activate userRepo
+            userRepo --> reviewSvc : Optional<User>
+            deactivate userRepo
+
+            reviewSvc --> rvc : author name
+            deactivate reviewSvc
+
+            rvc --> menu : author name
+            deactivate rvc
+
+        end
+
+        menu --> User : display reviews
+    end
+end
+
+deactivate menu
+
+@enduml

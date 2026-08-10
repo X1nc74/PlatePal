@@ -1,0 +1,63 @@
+@startuml
+title PlatePal - View Personal Ranking
+
+hide footbox
+skinparam shadowing false
+
+actor User
+boundary "menu :\nRestaurantMenu" as menu
+control "rc :\nRestaurantController" as rc
+control "prs :\nPersonalRankingService" as prs
+control "ratingSvc :\nRatingService" as ratingSvc
+database "ratingRepo :\nRatingRepository" as ratingRepo
+database "restRepo :\nRestaurantRepository" as restRepo
+
+User -> menu : enter user ID
+activate menu
+
+menu -> rc : getPersonalRanking(userId)
+activate rc
+
+rc -> prs : getPersonalRanking(userId)
+activate prs
+
+prs -> ratingSvc : getRatingsByUser(userId)
+activate ratingSvc
+
+ratingSvc -> ratingRepo : findByUserId(userId)
+activate ratingRepo
+ratingRepo --> ratingSvc : List<Rating>
+deactivate ratingRepo
+
+ratingSvc --> prs : List<Rating>
+deactivate ratingSvc
+
+prs -> prs : sort ratings by score descending
+
+loop each rating
+    prs -> restRepo : findById(rating.restaurantId)
+    activate restRepo
+
+    restRepo --> prs : Optional<Restaurant>
+    deactivate restRepo
+
+    opt restaurant exists
+        prs -> prs : add restaurant to ranked list
+    end
+end
+
+prs --> rc : List<Restaurant>
+deactivate prs
+
+rc --> menu : List<Restaurant>
+deactivate rc
+
+alt no ranked restaurants
+    menu --> User : "No restaurants found."
+else ranking available
+    menu --> User : display ranked restaurants
+end
+
+deactivate menu
+
+@enduml

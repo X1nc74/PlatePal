@@ -1,0 +1,86 @@
+@startuml update-restaurant
+
+title PlatePal - Update a restaurant
+
+skinparam responseMessageBelowArrow true
+skinparam shadowing false
+hide footbox
+
+actor Administrator
+
+participant "menu :\nAdminMenu" as menu
+participant "adc :\nAdminController" as adc
+participant "as :\nAdminService" as as
+participant "auth :\nAuthService" as auth
+participant "priceType :\nPriceCategory" as priceType
+participant "restaurant :\nRestaurant" as restaurant
+database "restRepo :\nRestaurantRepository" as restRepo
+
+Administrator -> menu ++ : submit new details(restaurantId, name, cuisine,\nlocation, price, description)
+
+menu -> priceType ++ : fromInput(price)
+priceType --> menu -- : PriceCategory
+
+menu -> adc ++ : updateRestaurant(restaurantId, name, cuisine,\nlocation, priceCategory, description)
+
+adc -> as ++ : updateRestaurant(restaurantId, name, cuisine,\nlocation, priceCategory, description)
+
+as -> auth ++ : isCurrentUserAdministrator()
+auth --> as -- : boolean
+
+break not an administrator
+    as --> adc : <<throw>> PermissionDeniedException
+    adc --> menu : <<throw>>
+    menu --> Administrator : "Only administrators may manage restaurants."
+end
+
+as -> restRepo ++ : findById(restaurantId)
+restRepo --> as -- : Optional<Restaurant>
+
+alt no restaurant with that id
+
+    as --> adc : <<throw>> IllegalArgumentException
+    adc --> menu : <<throw>>
+    menu --> Administrator : "No restaurant found with id ..."
+
+else restaurant exists
+
+    as -> restaurant ++ : setName(name)
+    restaurant --> as -- : updated
+
+    as -> restaurant ++ : setCuisine(cuisine)
+    restaurant --> as -- : updated
+
+    as -> restaurant ++ : setLocation(location)
+    restaurant --> as -- : updated
+
+    as -> restaurant ++ : setPriceCategory(priceCategory)
+    restaurant --> as -- : updated
+
+    as -> restaurant ++ : setDescription(description)
+    restaurant --> as -- : updated
+
+    alt any detail is invalid
+
+        restaurant --> as : <<throw>> IllegalArgumentException
+        as --> adc : <<throw>>
+        adc --> menu : <<throw>>
+        menu --> Administrator : show the reason
+
+    else details accepted
+
+        as -> restRepo ++ : save(restaurant)
+        restRepo --> as --
+
+        as --> adc : Restaurant
+        adc --> menu : Restaurant
+        menu --> Administrator : confirm the update
+
+    end
+end
+
+deactivate as
+deactivate adc
+deactivate menu
+
+@enduml

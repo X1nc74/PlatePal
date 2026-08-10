@@ -1,0 +1,190 @@
+@startuml
+title PlatePal - Write or Update a Review
+
+hide footbox
+skinparam shadowing false
+
+actor User
+boundary "menu :\nRatingMenu" as menu
+control "rvc :\nReviewController" as rvc
+control "rvs :\nReviewService" as rvs
+control "auth :\nAuthService" as auth
+
+entity "user :\nUser" as user
+entity "review :\nReview" as review
+
+database "restRepo :\nRestaurantRepository" as restRepo
+database "reviewRepo :\nReviewRepository" as reviewRepo
+
+User -> menu : enter restaurant ID
+activate menu
+
+menu -> rvc : getMyReview(restaurantId)
+activate rvc
+
+rvc -> rvs : getMyReview(restaurantId)
+activate rvs
+
+rvs -> auth : requireCurrentUser()
+activate auth
+auth --> rvs : User
+deactivate auth
+
+rvs -> reviewRepo : findByUserAndRestaurant(userId, restaurantId)
+activate reviewRepo
+reviewRepo --> rvs : Optional<Review>
+deactivate reviewRepo
+
+rvs --> rvc : Optional<Review>
+deactivate rvs
+
+rvc --> menu : Optional<Review>
+deactivate rvc
+
+menu -> menu : hadReview = isPresent()
+
+opt hadReview
+    menu --> User : explain that writing again replaces the review
+end
+
+User -> menu : enter review content
+
+menu -> rvc : writeReview(restaurantId, content)
+activate rvc
+
+rvc -> rvs : writeReview(restaurantId, content)
+activate rvs
+
+rvs -> restRepo : findById(restaurantId.trim())
+activate restRepo
+restRepo --> rvs : Optional<Restaurant>
+deactivate restRepo
+
+alt restaurant does not exist
+
+    rvs --> rvc : <<throw>> IllegalArgumentException
+    deactivate rvs
+
+    rvc --> menu : <<throw>>
+    deactivate rvc
+
+    menu --> User : show exception message
+
+else restaurant exists
+
+    rvs -> auth : requireCurrentUser()
+    activate auth
+    auth --> rvs : User
+    deactivate auth
+
+    rvs -> user : hasVisited(restaurantId)
+    activate user
+    user --> rvs : boolean
+    deactivate user
+
+    alt restaurant is not in Visited list
+
+        rvs --> rvc : <<throw>> IllegalArgumentException
+        deactivate rvs
+
+        rvc --> menu : <<throw>>
+        deactivate rvc
+
+        menu --> User : show exception message
+
+    else restaurant was visited
+
+        rvs -> reviewRepo : findByUserAndRestaurant(userId, restaurantId)
+        activate reviewRepo
+        reviewRepo --> rvs : Optional<Review>
+        deactivate reviewRepo
+
+        alt review already exists
+
+            rvs -> review : updateContent(content)
+            activate review
+
+            alt content empty or too long
+
+                review --> rvs : <<throw>> IllegalArgumentException
+                deactivate review
+
+                rvs --> rvc : <<throw>>
+                deactivate rvs
+
+                rvc --> menu : <<throw>>
+                deactivate rvc
+
+                menu --> User : show exception message
+
+            else valid content
+
+                review --> rvs : updated
+                deactivate review
+
+                rvs -> reviewRepo : save(review)
+                activate reviewRepo
+                reviewRepo --> rvs
+                deactivate reviewRepo
+
+                rvs --> rvc : Review
+                deactivate rvs
+
+                rvc --> menu : Review
+                deactivate rvc
+
+                menu --> User : confirm updated review
+            end
+
+        else no existing review
+
+            rvs -> reviewRepo : findAll()
+            activate reviewRepo
+            reviewRepo --> rvs : List<Review>
+            deactivate reviewRepo
+
+            rvs -> rvs : nextReviewId()
+
+            create review
+            rvs -> review : new Review(id, userId,\nrestaurantId, content)
+            activate review
+
+            alt content empty or too long
+
+                review --> rvs : <<throw>> IllegalArgumentException
+                deactivate review
+                destroy review
+
+                rvs --> rvc : <<throw>>
+                deactivate rvs
+
+                rvc --> menu : <<throw>>
+                deactivate rvc
+
+                menu --> User : show exception message
+
+            else valid content
+
+                review --> rvs : created
+                deactivate review
+
+                rvs -> reviewRepo : save(review)
+                activate reviewRepo
+                reviewRepo --> rvs
+                deactivate reviewRepo
+
+                rvs --> rvc : Review
+                deactivate rvs
+
+                rvc --> menu : Review
+                deactivate rvc
+
+                menu --> User : confirm saved review
+            end
+        end
+    end
+end
+
+deactivate menu
+
+@enduml

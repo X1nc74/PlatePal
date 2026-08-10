@@ -1,0 +1,64 @@
+@startuml follow-user
+'
+' PlatePal - "Follow another user".
+'
+' Code: platepal.service.SocialService#follow (SocialService.java:42)
+'
+
+title PlatePal - Follow another user
+
+skinparam responseMessageBelowArrow true
+skinparam shadowing false
+hide footbox
+
+actor User as actor_user
+
+participant "menu :\nSocialMenu" as menu
+participant "sc :\nSocialController" as sc
+participant "ss :\nSocialService" as ss
+participant "auth :\nAuthService" as auth
+participant "me :\nUser" as me
+participant "userRepo :\nUserRepository" as userRepo
+
+actor_user -> menu ++ : follow(username)
+menu -> sc ++ : follow(username)
+sc -> ss ++ : follow(username)
+
+ss -> userRepo ++ : findByUsername(username)
+userRepo --> ss -- : Optional<User>
+
+alt no user with that username
+    ss --> sc : <<throw>> IllegalArgumentException
+    sc --> menu : <<throw>>
+    menu -> actor_user : "No user found with username ..."
+
+else target exists
+    ss -> auth ++ : requireCurrentUser()
+    auth --> ss -- : me
+
+    ss -> me ++ : follow(targetId)
+
+    alt targetId is my own id
+        me --> ss -- : <<throw>> IllegalArgumentException
+        ss --> sc : <<throw>>
+        sc --> menu : <<throw>>
+        menu -> actor_user : "A user cannot follow themselves."
+
+    else another user
+        me --> ss -- : changed
+        ss -> userRepo : save(me)
+        ss -> auth : refreshCurrentUser()
+        ss --> sc -- : changed
+        sc --> menu -- : changed
+
+        alt changed
+            menu -> actor_user : "You are now following <username>."
+        else already following
+            menu -> actor_user : "You already follow <username>."
+        end
+    end
+end
+
+deactivate menu
+
+@enduml

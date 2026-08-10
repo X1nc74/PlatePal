@@ -1,0 +1,198 @@
+@startuml
+title PlatePal - Submit a Rating
+
+hide footbox
+skinparam shadowing false
+
+actor User
+boundary "menu :\nRatingMenu" as menu
+control "rc :\nRatingController" as rc
+control "rs :\nRatingService" as rs
+control "auth :\nAuthService" as auth
+
+entity "user :\nUser" as user
+entity "rating :\nRating" as rating
+
+database "restRepo :\nRestaurantRepository" as restRepo
+database "ratingRepo :\nRatingRepository" as ratingRepo
+
+User -> menu : enter restaurant ID
+activate menu
+
+menu -> rc : getMyRating(restaurantId)
+activate rc
+
+rc -> rs : getMyRating(restaurantId)
+activate rs
+
+rs -> auth : requireCurrentUser()
+activate auth
+auth --> rs : User
+deactivate auth
+
+rs -> ratingRepo : findByUserAndRestaurant(userId, restaurantId)
+activate ratingRepo
+ratingRepo --> rs : Optional<Rating>
+deactivate ratingRepo
+
+rs --> rc : Optional<Rating>
+deactivate rs
+
+rc --> menu : Optional<Rating>
+deactivate rc
+
+menu -> menu : hadRating = isPresent()
+
+User -> menu : enter score
+menu -> menu : Integer.parseInt(input)
+
+alt input is not a whole number
+
+    menu --> User : "A rating must be a whole number."
+
+else valid integer input
+
+    menu -> rc : rateRestaurant(restaurantId, score)
+    activate rc
+
+    rc -> rs : rateRestaurant(restaurantId, score)
+    activate rs
+
+    rs -> restRepo : findById(restaurantId.trim())
+    activate restRepo
+    restRepo --> rs : Optional<Restaurant>
+    deactivate restRepo
+
+    alt restaurant does not exist
+
+        rs --> rc : <<throw>> IllegalArgumentException
+        deactivate rs
+
+        rc --> menu : <<throw>>
+        deactivate rc
+
+        menu --> User : show exception message
+
+    else restaurant exists
+
+        rs -> auth : requireCurrentUser()
+        activate auth
+        auth --> rs : User
+        deactivate auth
+
+        rs -> user : hasVisited(restaurantId)
+        activate user
+        user --> rs : boolean
+        deactivate user
+
+        alt restaurant is not in Visited list
+
+            rs --> rc : <<throw>> IllegalArgumentException
+            deactivate rs
+
+            rc --> menu : <<throw>>
+            deactivate rc
+
+            menu --> User : show exception message
+
+        else restaurant was visited
+
+            rs -> ratingRepo : findByUserAndRestaurant(userId, restaurantId)
+            activate ratingRepo
+            ratingRepo --> rs : Optional<Rating>
+            deactivate ratingRepo
+
+            alt rating already exists
+
+                rs -> rating : updateScore(score)
+                activate rating
+
+                alt score outside 1..10
+
+                    rating --> rs : <<throw>> IllegalArgumentException
+                    deactivate rating
+
+                    rs --> rc : <<throw>>
+                    deactivate rs
+
+                    rc --> menu : <<throw>>
+                    deactivate rc
+
+                    menu --> User : show exception message
+
+                else valid score
+
+                    rating --> rs : updated
+                    deactivate rating
+
+                    rs -> ratingRepo : save(rating)
+                    activate ratingRepo
+                    ratingRepo --> rs
+                    deactivate ratingRepo
+
+                    rs --> rc : Rating
+                    deactivate rs
+
+                    rc --> menu : Rating
+                    deactivate rc
+
+                    alt hadRating
+                        menu --> User : confirm updated rating
+                    else first rating
+                        menu --> User : confirm saved rating
+                    end
+                end
+
+            else no existing rating
+
+                rs -> ratingRepo : findAll()
+                activate ratingRepo
+                ratingRepo --> rs : List<Rating>
+                deactivate ratingRepo
+
+                rs -> rs : nextRatingId()
+
+                create rating
+                rs -> rating : new Rating(id, userId,\nrestaurantId, score)
+                activate rating
+
+                alt score outside 1..10
+
+                    rating --> rs : <<throw>> IllegalArgumentException
+                    deactivate rating
+                    destroy rating
+
+                    rs --> rc : <<throw>>
+                    deactivate rs
+
+                    rc --> menu : <<throw>>
+                    deactivate rc
+
+                    menu --> User : show exception message
+
+                else valid score
+
+                    rating --> rs : created
+                    deactivate rating
+
+                    rs -> ratingRepo : save(rating)
+                    activate ratingRepo
+                    ratingRepo --> rs
+                    deactivate ratingRepo
+
+                    rs --> rc : Rating
+                    deactivate rs
+
+                    rc --> menu : Rating
+                    deactivate rc
+
+                    menu --> User : confirm saved rating
+                end
+            end
+        end
+    end
+end
+
+deactivate menu
+
+@enduml

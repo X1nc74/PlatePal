@@ -1,0 +1,119 @@
+@startuml
+title PlatePal - Search Restaurants
+
+hide footbox
+skinparam shadowing false
+
+actor User
+boundary "menu :\nRestaurantMenu" as menu
+control "rc :\nRestaurantController" as rc
+control "rs :\nRestaurantService" as rs
+database "restRepo :\nRestaurantRepository" as restRepo
+entity "restaurant :\nRestaurant" as restaurant
+participant "PriceCategory\n<<enumeration>>" as priceType
+
+User -> menu : choose search type and enter query
+activate menu
+
+alt search by name
+    menu -> rc : searchByName(query)
+    activate rc
+    rc -> rs : searchByName(query)
+    activate rs
+    rs -> restRepo : findAll()
+    activate restRepo
+    restRepo --> rs : List<Restaurant>
+    deactivate restRepo
+
+    loop each restaurant
+        rs -> restaurant : matchesName(query)
+        restaurant --> rs : boolean
+    end
+
+    rs --> rc : List<Restaurant>
+    deactivate rs
+    rc --> menu : List<Restaurant>
+    deactivate rc
+
+else search by cuisine
+    menu -> rc : searchByCuisine(cuisine)
+    activate rc
+    rc -> rs : searchByCuisine(cuisine)
+    activate rs
+    rs -> restRepo : findAll()
+    activate restRepo
+    restRepo --> rs : List<Restaurant>
+    deactivate restRepo
+
+    loop each restaurant
+        rs -> restaurant : matchesCuisine(cuisine)
+        restaurant --> rs : boolean
+    end
+
+    rs --> rc : List<Restaurant>
+    deactivate rs
+    rc --> menu : List<Restaurant>
+    deactivate rc
+
+else search by location
+    menu -> rc : searchByLocation(location)
+    activate rc
+    rc -> rs : searchByLocation(location)
+    activate rs
+    rs -> restRepo : findAll()
+    activate restRepo
+    restRepo --> rs : List<Restaurant>
+    deactivate restRepo
+
+    loop each restaurant
+        rs -> restaurant : matchesLocation(location)
+        restaurant --> rs : boolean
+    end
+
+    rs --> rc : List<Restaurant>
+    deactivate rs
+    rc --> menu : List<Restaurant>
+    deactivate rc
+
+else search by price
+    menu -> priceType : fromInput(input)
+    activate priceType
+
+    alt invalid price
+        priceType --> menu : <<throw>> IllegalArgumentException
+        deactivate priceType
+        menu --> User : show validation message
+
+    else valid price
+        priceType --> menu : PriceCategory
+        deactivate priceType
+
+        menu -> rc : searchByPrice(priceCategory)
+        activate rc
+        rc -> rs : searchByPrice(priceCategory)
+        activate rs
+        rs -> restRepo : findAll()
+        activate restRepo
+        restRepo --> rs : List<Restaurant>
+        deactivate restRepo
+
+        loop each restaurant
+            rs -> restaurant : getPriceCategory()
+            restaurant --> rs : PriceCategory
+        end
+
+        rs --> rc : List<Restaurant>
+        deactivate rs
+        rc --> menu : List<Restaurant>
+        deactivate rc
+    end
+end
+
+alt no matches
+    menu --> User : "No restaurants found."
+else matches found
+    menu --> User : display matching restaurants
+end
+
+deactivate menu
+@enduml
