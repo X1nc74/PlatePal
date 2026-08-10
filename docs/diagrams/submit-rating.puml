@@ -1,0 +1,66 @@
+@startuml submit-rating
+'
+' PlatePal - "Submit a rating".
+'
+' Code: platepal.service.RatingService#rateRestaurant (RatingService.java:54)
+'
+
+title PlatePal - Submit a rating
+
+skinparam responseMessageBelowArrow true
+skinparam shadowing false
+hide footbox
+
+actor User as actor_user
+
+participant "menu :\nRatingMenu" as menu
+participant "rc :\nRatingController" as rc
+participant "rs :\nRatingService" as rs
+participant "auth :\nAuthService" as auth
+participant "rating :\nRating" as rating
+participant "restRepo :\nRestaurantRepository" as restRepo
+participant "ratingRepo :\nRatingRepository" as ratingRepo
+
+actor_user -> menu ++ : submit rating(restaurantId, score)
+menu -> rc ++ : rateRestaurant(id, score)
+rc -> rs ++ : rateRestaurant(id, score)
+
+rs -> restRepo ++ : findById(id)
+restRepo --> rs -- : Optional<Restaurant>
+
+alt no restaurant with that id
+    rs --> rc : <<throw>> IllegalArgumentException
+    rc --> menu : <<throw>>
+    menu -> actor_user : "No restaurant found with id ..."
+
+else restaurant exists
+    rs -> auth ++ : requireCurrentUser()
+    auth --> rs -- : user
+
+    rs -> ratingRepo ++ : find(user, restaurant)
+    ratingRepo --> rs -- : Optional<Rating>
+
+    alt already rated by this user
+        rs -> rating ++ : updateScore(score)
+    else first rating
+        rs -> rating ++ : <<create>> new Rating(user, restaurant, score)
+    end
+
+    alt score outside 1..10
+        rating --> rs -- : <<throw>> IllegalArgumentException
+        rs --> rc : <<throw>>
+        rc --> menu : <<throw>>
+        menu -> actor_user : show the reason
+
+    else score accepted
+        rating --> rs -- : rating
+        rs -> ratingRepo : save(rating)
+        rs --> rc -- : Rating
+        rc --> menu -- : Rating
+        menu -> actor_user : confirm the score
+    end
+end
+
+deactivate menu
+
+@enduml

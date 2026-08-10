@@ -1,0 +1,55 @@
+@startuml add-restaurant
+'
+' PlatePal - "Add a restaurant".
+'
+' Code: platepal.service.AdminService#addRestaurant (AdminService.java:47)
+'
+
+title PlatePal - Add a restaurant
+
+skinparam responseMessageBelowArrow true
+skinparam shadowing false
+hide footbox
+
+actor Administrator as admin
+
+participant "menu :\nAdminMenu" as menu
+participant "adc :\nAdminController" as adc
+participant "as :\nAdminService" as as
+participant "auth :\nAuthService" as auth
+participant "restaurant :\nRestaurant" as restaurant
+participant "restRepo :\nRestaurantRepository" as restRepo
+
+admin -> menu ++ : submit details(name, cuisine, location, price, description)
+menu -> adc ++ : addRestaurant(details)
+adc -> as ++ : addRestaurant(details)
+
+as -> auth ++ : isCurrentUserAdministrator()
+auth --> as -- : isAdministrator
+
+break not an administrator
+    as --> adc : <<throw>> PermissionDeniedException
+    adc --> menu : <<throw>>
+    menu -> admin : "Only administrators may manage restaurants."
+end
+
+as -> as : nextId()
+as --> restaurant ** : <<create>> new Restaurant(id, name, cuisine, location, price)
+
+alt a detail is empty or invalid
+    restaurant --> as : <<throw>> IllegalArgumentException
+    as --> adc : <<throw>>
+    adc --> menu : <<throw>>
+    menu -> admin : show the reason
+
+else details accepted
+    as -> restaurant : setDescription(description)
+    as -> restRepo : save(restaurant)
+    as --> adc -- : Restaurant
+    adc --> menu -- : Restaurant
+    menu -> admin : added, with its new id
+end
+
+deactivate menu
+
+@enduml

@@ -1,0 +1,66 @@
+@startuml write-review
+'
+' PlatePal - "Write a review".
+'
+' Code: platepal.service.ReviewService#writeReview (ReviewService.java:51)
+'
+
+title PlatePal - Write a review
+
+skinparam responseMessageBelowArrow true
+skinparam shadowing false
+hide footbox
+
+actor User as actor_user
+
+participant "menu :\nRatingMenu" as menu
+participant "rvc :\nReviewController" as rvc
+participant "rvs :\nReviewService" as rvs
+participant "auth :\nAuthService" as auth
+participant "review :\nReview" as review
+participant "restRepo :\nRestaurantRepository" as restRepo
+participant "reviewRepo :\nReviewRepository" as reviewRepo
+
+actor_user -> menu ++ : submit review(restaurantId, content)
+menu -> rvc ++ : writeReview(id, content)
+rvc -> rvs ++ : writeReview(id, content)
+
+rvs -> restRepo ++ : findById(id)
+restRepo --> rvs -- : Optional<Restaurant>
+
+alt no restaurant with that id
+    rvs --> rvc : <<throw>> IllegalArgumentException
+    rvc --> menu : <<throw>>
+    menu -> actor_user : "No restaurant found with id ..."
+
+else restaurant exists
+    rvs -> auth ++ : requireCurrentUser()
+    auth --> rvs -- : user
+
+    rvs -> reviewRepo ++ : find(user, restaurant)
+    reviewRepo --> rvs -- : Optional<Review>
+
+    alt already reviewed by this user
+        rvs -> review ++ : updateContent(content)
+    else first review
+        rvs -> review ++ : <<create>> new Review(user, restaurant, content)
+    end
+
+    alt content empty or too long
+        review --> rvs -- : <<throw>> IllegalArgumentException
+        rvs --> rvc : <<throw>>
+        rvc --> menu : <<throw>>
+        menu -> actor_user : show the reason
+
+    else content accepted
+        review --> rvs -- : review
+        rvs -> reviewRepo : save(review)
+        rvs --> rvc -- : Review
+        rvc --> menu -- : Review
+        menu -> actor_user : confirm the review
+    end
+end
+
+deactivate menu
+
+@enduml

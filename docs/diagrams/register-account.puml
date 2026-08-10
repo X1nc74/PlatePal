@@ -1,0 +1,59 @@
+@startuml register-account
+'
+' PlatePal - "Register an account".
+'
+' Use-case level: actor, UI, controller, service, domain object, repository.
+' Persistence below the repository is out of scope here; see the design notes
+' in docs/diagrams/README.md.
+'
+' Code: platepal.service.UserService#register (UserService.java:33)
+'
+
+title PlatePal - Register an account
+
+skinparam responseMessageBelowArrow true
+skinparam shadowing false
+skinparam BoxPadding 10
+hide footbox
+
+actor Visitor
+
+participant "menu :\nAuthMenu" as menu
+participant "ac :\nAuthController" as ac
+participant "us :\nUserService" as us
+participant "user :\nUser" as user
+participant "userRepo :\nUserRepository" as userRepo
+
+Visitor -> menu ++ : submit registration(username, password)
+menu -> ac ++ : register(username, password)
+ac -> us ++ : register(username, password)
+
+us -> us : nextId()
+us --> user ** : <<create>> new User(id, username, password)
+
+alt invalid username or password
+    user --> us : <<throw>> IllegalArgumentException
+    us --> ac : <<throw>>
+    ac --> menu : <<throw>>
+    menu -> Visitor : show the reason
+
+else fields accepted
+    us -> userRepo ++ : findByUsername(username)
+    userRepo --> us -- : Optional<User>
+
+    alt username already taken
+        us --> ac : <<throw>> IllegalArgumentException
+        ac --> menu : <<throw>>
+        menu -> Visitor : "Username '...' is already taken."
+
+    else username available
+        us -> userRepo : save(user)
+        us --> ac -- : User
+        ac --> menu -- : User
+        menu -> Visitor : account created
+    end
+end
+
+deactivate menu
+
+@enduml

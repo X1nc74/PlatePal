@@ -1,0 +1,72 @@
+@startuml remove-restaurant
+'
+' PlatePal - "Remove a restaurant".
+'
+' Four repositories appear here because the delete cascades: the restaurant,
+' its ratings, its reviews, and every personal list that referred to it.
+'
+' Code: platepal.service.AdminService#removeRestaurant (AdminService.java:103)
+'
+
+title PlatePal - Remove a restaurant
+
+skinparam responseMessageBelowArrow true
+skinparam shadowing false
+hide footbox
+
+actor Administrator as admin
+
+participant "menu :\nAdminMenu" as menu
+participant "adc :\nAdminController" as adc
+participant "as :\nAdminService" as as
+participant "auth :\nAuthService" as auth
+participant "user :\nUser" as user
+participant "restRepo :\nRestaurantRepository" as restRepo
+participant "ratingRepo :\nRatingRepository" as ratingRepo
+participant "reviewRepo :\nReviewRepository" as reviewRepo
+participant "userRepo :\nUserRepository" as userRepo
+
+admin -> menu ++ : remove restaurant(restaurantId)
+menu -> adc ++ : removeRestaurant(id)
+adc -> as ++ : removeRestaurant(id)
+
+as -> auth ++ : isCurrentUserAdministrator()
+auth --> as -- : isAdministrator
+
+break not an administrator
+    as --> adc : <<throw>> PermissionDeniedException
+    adc --> menu : <<throw>>
+    menu -> admin : "Only administrators may manage restaurants."
+end
+
+as -> restRepo ++ : findById(id)
+restRepo --> as -- : Optional<Restaurant>
+
+alt no restaurant with that id
+    as --> adc : <<throw>> IllegalArgumentException
+    adc --> menu : <<throw>>
+    menu -> admin : "No restaurant found with id ..."
+
+else restaurant exists
+    as -> restRepo : deleteById(id)
+    as -> ratingRepo : deleteByRestaurantId(id)
+    as -> reviewRepo : deleteByRestaurantId(id)
+
+    as -> userRepo ++ : findAll()
+    userRepo --> as -- : all users
+
+    loop every user holding this restaurant
+        as -> user : forgetRestaurant(id)
+        as -> userRepo : save(user)
+    end
+
+    as -> auth : refreshCurrentUser()
+
+    as --> adc -- : removed
+    adc --> menu -- : removed
+    menu -> admin : confirm the removal
+end
+
+deactivate menu
+
+@enduml

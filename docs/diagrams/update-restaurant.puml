@@ -1,0 +1,64 @@
+@startuml update-restaurant
+'
+' PlatePal - "Update a restaurant".
+'
+' Code: platepal.service.AdminService#updateRestaurant (AdminService.java:72)
+'
+
+title PlatePal - Update a restaurant
+
+skinparam responseMessageBelowArrow true
+skinparam shadowing false
+hide footbox
+
+actor Administrator as admin
+
+participant "menu :\nAdminMenu" as menu
+participant "adc :\nAdminController" as adc
+participant "as :\nAdminService" as as
+participant "auth :\nAuthService" as auth
+participant "restaurant :\nRestaurant" as restaurant
+participant "restRepo :\nRestaurantRepository" as restRepo
+
+admin -> menu ++ : submit new details(restaurantId, ...)
+menu -> adc ++ : updateRestaurant(id, details)
+adc -> as ++ : updateRestaurant(id, details)
+
+as -> auth ++ : isCurrentUserAdministrator()
+auth --> as -- : isAdministrator
+
+break not an administrator
+    as --> adc : <<throw>> PermissionDeniedException
+    adc --> menu : <<throw>>
+    menu -> admin : "Only administrators may manage restaurants."
+end
+
+as -> restRepo ++ : findById(id)
+restRepo --> as -- : Optional<Restaurant>
+
+alt no restaurant with that id
+    as --> adc : <<throw>> IllegalArgumentException
+    adc --> menu : <<throw>>
+    menu -> admin : "No restaurant found with id ..."
+
+else restaurant exists
+    as -> restaurant ++ : set name, cuisine, location, price, description
+
+    alt a detail is empty or invalid
+        restaurant --> as -- : <<throw>> IllegalArgumentException
+        as --> adc : <<throw>>
+        adc --> menu : <<throw>>
+        menu -> admin : show the reason
+
+    else details accepted
+        restaurant --> as -- : updated
+        as -> restRepo : save(restaurant)
+        as --> adc -- : Restaurant
+        adc --> menu -- : Restaurant
+        menu -> admin : confirm the update
+    end
+end
+
+deactivate menu
+
+@enduml
