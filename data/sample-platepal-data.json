@@ -1,0 +1,79 @@
+{
+  "users": [
+    {
+      "id": "U001",
+      "username": "admin",
+      "password": "admin123",
+      "role": "ADMIN",
+      "visitedRestaurantIds": [],
+      "wantToTryRestaurantIds": [],
+      "followingUserIds": []
+    },
+    {
+      "id": "U002",
+      "username": "testuser",
+      "password": "test123",
+      "role": "USER",
+      "visitedRestaurantIds": ["R001", "R002"],
+      "wantToTryRestaurantIds": ["R003"],
+      "followingUserIds": []
+    }
+  ],
+  "restaurants": [
+    {
+      "id": "R001",
+      "name": "Joe's Pizza",
+      "cuisine": "Pizza",
+      "location": "New York",
+      "priceCategory": "BUDGET",
+      "description": "Classic New York-style pizza."
+    },
+    {
+      "id": "R002",
+      "name": "Sushi Nakazawa",
+      "cuisine": "Japanese",
+      "location": "New York",
+      "priceCategory": "EXPENSIVE",
+      "description": "Japanese sushi restaurant."
+    },
+    {
+      "id": "R003",
+      "name": "Pasta House",
+      "cuisine": "Italian",
+      "location": "Boston",
+      "priceCategory": "MODERATE",
+      "description": "Casual Italian restaurant specializing in pasta."
+    },
+    {
+      "id": "R004",
+      "name": "Green Garden",
+      "cuisine": "Vegetarian",
+      "location": "Jersey City",
+      "priceCategory": "MODERATE",
+      "description": "Vegetarian restaurant with seasonal dishes."
+    },
+    {
+      "id": "R005",
+      "name": "Prime Steakhouse",
+      "cuisine": "Steakhouse",
+      "location": "New York",
+      "priceCategory": "LUXURY",
+      "description": "Upscale steakhouse with premium cuts."
+    }
+  ],
+  "ratings": [
+    {
+      "id": "RT001",
+      "userId": "U002",
+      "restaurantId": "R001",
+      "score": 8
+    },
+    {
+      "id": "RT002",
+      "userId": "U002",
+      "restaurantId": "R002",
+      "score": 10
+    }
+  ],
+  "reviews": []
+}
