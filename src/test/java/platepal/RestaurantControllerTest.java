@@ -48,18 +48,30 @@ public class RestaurantControllerTest {
                 new FakeRatingRepository();
 
         ratingRepository.add(
-                new Rating("RT001", "U001", "R001", 8));
+                new Rating(
+                        "RT001",
+                        "U001",
+                        "R001",
+                        8));
 
         ratingRepository.add(
-                new Rating("RT002", "U001", "R002", 10));
+                new Rating(
+                        "RT002",
+                        "U001",
+                        "R002",
+                        10));
 
         RestaurantService restaurantService =
-                new RestaurantService(restaurantRepository);
+                new RestaurantService(
+                        restaurantRepository);
 
-        // Only the read paths are exercised here, so no session is involved and
-        // the auth service is never touched.
+        // Only read paths are exercised in these tests,
+        // so no logged-in session is required.
         RatingService ratingService =
-                new RatingService(ratingRepository, restaurantRepository, null);
+                new RatingService(
+                        ratingRepository,
+                        restaurantRepository,
+                        null);
 
         PersonalRankingService personalRankingService =
                 new PersonalRankingService(
@@ -69,7 +81,8 @@ public class RestaurantControllerTest {
         controller =
                 new RestaurantController(
                         restaurantService,
-                        personalRankingService);
+                        personalRankingService,
+                        ratingService);
     }
 
     @Test
@@ -77,8 +90,13 @@ public class RestaurantControllerTest {
         List<Restaurant> results =
                 controller.searchByName("pizza");
 
-        assertEquals(1, results.size());
-        assertEquals("Joe's Pizza", results.get(0).getName());
+        assertEquals(
+                1,
+                results.size());
+
+        assertEquals(
+                "Joe's Pizza",
+                results.get(0).getName());
     }
 
     @Test
@@ -86,9 +104,17 @@ public class RestaurantControllerTest {
         List<Restaurant> ranking =
                 controller.getPersonalRanking("U001");
 
-        assertEquals(2, ranking.size());
-        assertEquals("Sushi Place", ranking.get(0).getName());
-        assertEquals("Joe's Pizza", ranking.get(1).getName());
+        assertEquals(
+                2,
+                ranking.size());
+
+        assertEquals(
+                "Sushi Place",
+                ranking.get(0).getName());
+
+        assertEquals(
+                "Joe's Pizza",
+                ranking.get(1).getName());
     }
 
     @Test
@@ -96,10 +122,22 @@ public class RestaurantControllerTest {
         Optional<Restaurant> restaurant =
                 controller.getRestaurantById("R001");
 
-        assertEquals(true, restaurant.isPresent());
-        assertEquals("Joe's Pizza", restaurant.get().getName());
-        assertEquals("Pizza", restaurant.get().getCuisine());
-        assertEquals("New York", restaurant.get().getLocation());
+        assertEquals(
+                true,
+                restaurant.isPresent());
+
+        assertEquals(
+                "Joe's Pizza",
+                restaurant.get().getName());
+
+        assertEquals(
+                "Pizza",
+                restaurant.get().getCuisine());
+
+        assertEquals(
+                "New York",
+                restaurant.get().getLocation());
+
         assertEquals(
                 PriceCategory.BUDGET,
                 restaurant.get().getPriceCategory());
@@ -113,28 +151,48 @@ public class RestaurantControllerTest {
 
         @Override
         public List<Restaurant> findAll() {
-            return new ArrayList<>(restaurants);
+            return new ArrayList<>(
+                    restaurants);
         }
 
         @Override
-        public Optional<Restaurant> findById(String id) {
+        public Optional<Restaurant> findById(
+                String id) {
+
             return restaurants.stream()
-                    .filter(r -> r.getId().equals(id))
+                    .filter(
+                            restaurant ->
+                                    restaurant
+                                            .getId()
+                                            .equals(id))
                     .findFirst();
         }
 
         @Override
-        public void save(Restaurant restaurant) {
-            restaurants.removeIf(
-                    r -> r.getId().equals(restaurant.getId()));
+        public void save(
+                Restaurant restaurant) {
 
-            restaurants.add(restaurant);
+            restaurants.removeIf(
+                    stored ->
+                            stored
+                                    .getId()
+                                    .equals(
+                                            restaurant
+                                                    .getId()));
+
+            restaurants.add(
+                    restaurant);
         }
 
         @Override
-        public void deleteById(String id) {
+        public void deleteById(
+                String id) {
+
             restaurants.removeIf(
-                    r -> r.getId().equals(id));
+                    restaurant ->
+                            restaurant
+                                    .getId()
+                                    .equals(id));
         }
     }
 
@@ -144,60 +202,106 @@ public class RestaurantControllerTest {
         private final List<Rating> ratings =
                 new ArrayList<>();
 
-        public void add(Rating rating) {
-            ratings.add(rating);
+        public void add(
+                Rating rating) {
+
+            ratings.add(
+                    rating);
         }
 
         @Override
         public List<Rating> findAll() {
-            return new ArrayList<>(ratings);
+            return new ArrayList<>(
+                    ratings);
         }
 
         @Override
-        public List<Rating> findByUserId(String userId) {
+        public List<Rating> findByUserId(
+                String userId) {
+
             return ratings.stream()
-                    .filter(rating -> rating.belongsTo(userId))
+                    .filter(
+                            rating ->
+                                    rating.belongsTo(
+                                            userId))
                     .toList();
         }
 
         @Override
-        public List<Rating> findByRestaurantId(String restaurantId) {
+        public List<Rating> findByRestaurantId(
+                String restaurantId) {
+
             return ratings.stream()
-                    .filter(rating -> rating.isFor(restaurantId))
+                    .filter(
+                            rating ->
+                                    rating.isFor(
+                                            restaurantId))
                     .toList();
         }
 
         @Override
-        public Optional<Rating> findById(String id) {
+        public Optional<Rating> findById(
+                String id) {
+
             return ratings.stream()
-                    .filter(rating -> rating.getId().equals(id))
+                    .filter(
+                            rating ->
+                                    rating
+                                            .getId()
+                                            .equals(id))
                     .findFirst();
         }
 
         @Override
         public Optional<Rating> findByUserAndRestaurant(
-                String userId, String restaurantId) {
+                String userId,
+                String restaurantId) {
 
             return ratings.stream()
-                    .filter(rating -> rating.belongsTo(userId)
-                            && rating.isFor(restaurantId))
+                    .filter(
+                            rating ->
+                                    rating.belongsTo(
+                                            userId)
+                                            && rating.isFor(
+                                                    restaurantId))
                     .findFirst();
         }
 
         @Override
-        public void save(Rating rating) {
-            ratings.removeIf(stored -> stored.getId().equals(rating.getId()));
-            ratings.add(rating);
+        public void save(
+                Rating rating) {
+
+            ratings.removeIf(
+                    stored ->
+                            stored
+                                    .getId()
+                                    .equals(
+                                            rating
+                                                    .getId()));
+
+            ratings.add(
+                    rating);
         }
 
         @Override
-        public void deleteById(String id) {
-            ratings.removeIf(rating -> rating.getId().equals(id));
+        public void deleteById(
+                String id) {
+
+            ratings.removeIf(
+                    rating ->
+                            rating
+                                    .getId()
+                                    .equals(id));
         }
 
         @Override
-        public void deleteByRestaurantId(String restaurantId) {
-            ratings.removeIf(rating -> rating.isFor(restaurantId));
+        public void deleteByRestaurantId(
+                String restaurantId) {
+
+            ratings.removeIf(
+                    rating ->
+                            rating.isFor(
+                                    restaurantId));
         }
     }
 }

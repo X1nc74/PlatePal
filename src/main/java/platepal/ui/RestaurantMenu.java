@@ -8,26 +8,21 @@ import platepal.controller.ReviewController;
 import platepal.model.PriceCategory;
 import platepal.model.Restaurant;
 import platepal.model.Review;
-import platepal.service.RatingService;
 import platepal.strategy.SortByName;
 import platepal.strategy.SortByPrice;
-import platepal.strategy.SortByRating;
 
 public class RestaurantMenu {
 
     private final RestaurantController controller;
-    private final RatingService ratingService;
     private final ReviewController reviewController;
     private final Scanner scanner;
 
     public RestaurantMenu(
             RestaurantController controller,
-            RatingService ratingService,
             ReviewController reviewController,
             Scanner scanner) {
 
         this.controller = controller;
-        this.ratingService = ratingService;
         this.reviewController = reviewController;
         this.scanner = scanner;
     }
@@ -80,7 +75,7 @@ public class RestaurantMenu {
                 case "0":
                     running = false;
                     break;
-                    
+
                 default:
                     System.out.println("Invalid option.");
             }
@@ -142,62 +137,93 @@ public class RestaurantMenu {
 
         } catch (IllegalArgumentException e) {
             System.out.println(e.getMessage());
+            pause();
         }
     }
-    
+
     private void viewRestaurantDetails() {
-    System.out.print("Enter restaurant ID: ");
-    String id = scanner.nextLine().trim();
+        System.out.print("Enter restaurant ID: ");
+        String id = scanner.nextLine().trim();
 
-    controller.getRestaurantById(id)
-            .ifPresentOrElse(
-                    restaurant -> {
-                        System.out.println();
-                        System.out.println("=== Restaurant Details ===");
-                        System.out.println("ID: " + restaurant.getId());
-                        System.out.println("Name: " + restaurant.getName());
-                        System.out.println("Cuisine: " + restaurant.getCuisine());
-                        System.out.println("Location: " + restaurant.getLocation());
-                        System.out.println(
-                                "Price: " + restaurant.getPriceCategory().getSymbol());
-                        System.out.println(
-                                "Description: " + restaurant.getDescription());
+        controller.getRestaurantById(id)
+                .ifPresentOrElse(
+                        restaurant -> {
+                            System.out.println();
+                            System.out.println("=== Restaurant Details ===");
+                            System.out.println(
+                                    "ID: " + restaurant.getId());
+                            System.out.println(
+                                    "Name: " + restaurant.getName());
+                            System.out.println(
+                                    "Cuisine: " + restaurant.getCuisine());
+                            System.out.println(
+                                    "Location: " + restaurant.getLocation());
+                            System.out.println(
+                                    "Price: "
+                                            + restaurant
+                                                    .getPriceCategory()
+                                                    .getSymbol());
+                            System.out.println(
+                                    "Description: "
+                                            + restaurant.getDescription());
 
-                        printRatingSummary(restaurant.getId());
-                        printReviews(restaurant.getId());
+                            printRatingSummary(
+                                    restaurant.getId());
 
-                        pause();
-                    },
-                    () -> {
-                        System.out.println("Restaurant not found.");
-                        pause();
-                    });
-}
+                            printReviews(
+                                    restaurant.getId());
+
+                            pause();
+                        },
+                        () -> {
+                            System.out.println(
+                                    "Restaurant not found.");
+                            pause();
+                        });
+    }
 
     /**
-     * The average score, how many ratings it is based on, and the reader's own
-     * score if they have left one. An average alone is misleading when it comes
-     * from a single rating, so the count is always shown next to it.
+     * Displays the average rating, total rating count,
+     * and the logged-in user's own rating if one exists.
      */
-    private void printRatingSummary(String restaurantId) {
-        int count = ratingService.getRatingCount(restaurantId);
+    private void printRatingSummary(
+            String restaurantId) {
+
+        int count =
+                controller.getRatingCount(
+                        restaurantId);
 
         if (count == 0) {
-            System.out.println("Rating: not rated yet");
+            System.out.println(
+                    "Rating: not rated yet");
         } else {
             System.out.printf(
                     "Rating: %.1f/10 from %d %s%n",
-                    ratingService.getAverageRating(restaurantId),
+                    controller.getAverageRating(
+                            restaurantId),
                     count,
-                    count == 1 ? "rating" : "ratings");
+                    count == 1
+                            ? "rating"
+                            : "ratings");
         }
 
-        ratingService.getMyRating(restaurantId).ifPresent(
-                rating -> System.out.println("Your rating: " + rating.getScore() + "/10"));
+        controller.getMyRating(
+                        restaurantId)
+                .ifPresent(
+                        rating ->
+                                System.out.println(
+                                        "Your rating: "
+                                                + rating.getScore()
+                                                + "/10"));
     }
 
-    private void printReviews(String restaurantId) {
-        List<Review> reviews = reviewController.getReviewsForRestaurant(restaurantId);
+    private void printReviews(
+            String restaurantId) {
+
+        List<Review> reviews =
+                reviewController
+                        .getReviewsForRestaurant(
+                                restaurantId);
 
         if (reviews.isEmpty()) {
             return;
@@ -207,9 +233,18 @@ public class RestaurantMenu {
         System.out.println("Reviews:");
 
         for (Review review : reviews) {
-            System.out.println("  " + reviewController.getAuthorName(review)
-                    + " (" + review.getUpdatedAt().toLocalDate() + "):");
-            System.out.println("    " + review.getContent());
+            System.out.println(
+                    "  "
+                            + reviewController
+                                    .getAuthorName(review)
+                            + " ("
+                            + review.getUpdatedAt()
+                                    .toLocalDate()
+                            + "):");
+
+            System.out.println(
+                    "    "
+                            + review.getContent());
         }
     }
 
@@ -234,45 +269,49 @@ public class RestaurantMenu {
     }
 
     private void sortByRating() {
-        List<Restaurant> restaurants =
-                controller.getAllRestaurants();
-
         printRestaurants(
-                controller.sortRestaurants(
-                        restaurants,
-                        new SortByRating(ratingService)));
+                controller.sortByAverageRating());
     }
 
     private void viewPersonalRanking() {
         System.out.print("Enter user ID: ");
-        String userId = scanner.nextLine();
+        String userId =
+                scanner.nextLine();
 
         printRestaurants(
-                controller.getPersonalRanking(userId));
+                controller.getPersonalRanking(
+                        userId));
     }
 
     private void printRestaurants(
-        List<Restaurant> restaurants) {
+            List<Restaurant> restaurants) {
 
-    if (restaurants.isEmpty()) {
-        System.out.println("No restaurants found.");
+        if (restaurants.isEmpty()) {
+            System.out.println(
+                    "No restaurants found.");
+            pause();
+            return;
+        }
+
+        System.out.println();
+
+        for (int i = 0;
+                i < restaurants.size();
+                i++) {
+
+            System.out.println(
+                    (i + 1)
+                            + ". "
+                            + restaurants.get(i));
+        }
+
         pause();
-        return;
     }
-
-    System.out.println();
-
-    for (int i = 0; i < restaurants.size(); i++) {
-        System.out.println(
-                (i + 1) + ". " + restaurants.get(i));
-    }
-
-    pause();
-}
 
     private void pause() {
         System.out.println();
-        System.out.print("Press Enter to continue...");
+        System.out.print(
+                "Press Enter to continue...");
         scanner.nextLine();
     }
 }

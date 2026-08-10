@@ -112,26 +112,34 @@ public class Main {
                         restaurantService);
 
         PersonalListController personalListController =
-                new PersonalListController(personalListService);
+                new PersonalListController(
+                        personalListService);
 
         SocialController socialController =
-                new SocialController(socialService);
+                new SocialController(
+                        socialService);
 
         RatingController ratingController =
-                new RatingController(ratingService);
+                new RatingController(
+                        ratingService);
 
         ReviewController reviewController =
-                new ReviewController(reviewService);
+                new ReviewController(
+                        reviewService);
 
         RestaurantController restaurantController =
                 new RestaurantController(
                         restaurantService,
-                        personalRankingService);
+                        personalRankingService,
+                        ratingService);
 
-        userService.ensureAdministratorExists("admin", "admin123")
-                .ifPresent(admin -> System.out.println(
-                        "No administrator existed, so one was created: "
-                                + "username 'admin', password 'admin123'."));
+        userService.ensureAdministratorExists(
+                        "admin",
+                        "admin123")
+                .ifPresent(
+                        admin -> System.out.println(
+                                "No administrator existed, so one was created: "
+                                        + "username 'admin', password 'admin123'."));
 
         try (Scanner scanner = new Scanner(System.in)) {
 
@@ -143,7 +151,6 @@ public class Main {
             RestaurantMenu restaurantMenu =
                     new RestaurantMenu(
                             restaurantController,
-                            ratingService,
                             reviewController,
                             scanner);
 
@@ -180,10 +187,12 @@ public class Main {
                             adminMenu,
                             scanner);
 
-            Optional<User> loggedIn = authMenu.show();
+            Optional<User> loggedIn =
+                    authMenu.show();
 
             if (loggedIn.isEmpty()) {
-                System.out.println("Goodbye!");
+                System.out.println(
+                        "Goodbye!");
                 return;
             }
 
@@ -192,7 +201,11 @@ public class Main {
             authController.logout();
 
             System.out.println(
-                    "Goodbye, " + loggedIn.get().getUsername() + "!");
+                    "Goodbye, "
+                            + loggedIn
+                                    .get()
+                                    .getUsername()
+                            + "!");
         }
     }
 }
